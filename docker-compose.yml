@@ -1,25 +1,54 @@
 version: "3.4"
 services:
-  vpn:
-    container_name: vpn
-    image: dperson/openvpn-client:latest
+#  vpn:
+#    container_name: vpn
+#    image: dperson/openvpn-client:latest
+#    cap_add:
+#      - net_admin # required to modify network interfaces
+#    restart: unless-stopped
+#    volumes:
+#      - /dev/net:/dev/net:z # tun device
+#      - ${ROOT}/config/vpn:/vpn # OpenVPN configuration
+#    security_opt:
+#      - label:disable
+#    ports:
+#      - 8112:8112 # port for deluge web UI to be reachable from local network
+#    command: '-f "" -r 192.168.1.0/24' # enable firewall and route local network traffic
+#
+  gluetun:
+    image: qmcgaw/private-internet-access
+    container_name: gluetun
     cap_add:
-      - net_admin # required to modify network interfaces
-    restart: unless-stopped
-    volumes:
-      - /dev/net:/dev/net:z # tun device
-      - ${ROOT}/config/vpn:/vpn # OpenVPN configuration
-    security_opt:
-      - label:disable
+      - NET_ADMIN
+    network_mode: bridge
     ports:
-      - 8112:8112 # port for deluge web UI to be reachable from local network
-    command: '-f "" -r 192.168.1.0/24' # enable firewall and route local network traffic
+      - 8888:8888/tcp # HTTP proxy
+      - 8388:8388/tcp # Shadowsocks
+      - 8388:8388/udp # Shadowsocks
+      - 8000:8000/tcp # Built-in HTTP control server
+      - 8112:8112/tcp # HTTP proxy
+    # command:
+    volumes:
+      - ${ROOT}/config/gluetun:/gluetun
+    environment:
+      # More variables are available, see the readme table
+      - VPNSP=private internet access
+      # Timezone for accurate logs times
+      - TZ=Europe/Stockholm
+      # All VPN providers
+      - USER=${VPNUSER}
+      # All VPN providers but Mullvad
+      - PASSWORD=${VPNPASS}  
+      # All VPN providers but Mullvad
+      - REGION=${VPNREGION} 
+    restart: unless-stopped
 
   deluge:
     container_name: deluge
     image: linuxserver/deluge:latest
     restart: unless-stopped
-    network_mode: service:vpn # run on the vpn network
+    #network_mode: service:vpn # run on the vpn network
+    network_mode: service:gluetun # run on the vpn network
     environment:
       - PUID=${PUID} # default user id, defined in .env
       - PGID=${PGID} # default group id, defined in .env
@@ -113,3 +142,4 @@ services:
       - ${ROOT}/complete/tv:/tv # tv shows folder
     ports:
       - 6767:6767
+
