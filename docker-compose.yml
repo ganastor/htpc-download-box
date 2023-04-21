@@ -34,12 +34,12 @@ services:
     restart: unless-stopped
     network_mode: service:gluetun # run on the vpn network
     environment:
-      - PUID=${PUID} # default user id, defined in .env
-      - PGID=${PGID} # default group id, defined in .env
-      - TZ=${VPNTZ} # timezone, defined in .env
+      - PUID=${PUID}  # default user id, defined in .env
+      - PGID=${PGID}  # default group id, defined in .env
+      - TZ=${VPNTZ}   # timezone, defined in .env
     volumes:
-      - ${ROOT}/data/torrents:/data/torrents # downloads folder
-      - ${ROOT}/config/deluge:/config # config files
+      - ${ROOT}/data/torrents:/data/torrents    # downloads folder
+      - ${ROOT}/config/deluge:/config           # config files
 
   jackett:
     container_name: jackett
@@ -47,13 +47,13 @@ services:
     restart: unless-stopped
     network_mode: service:gluetun # run on the vpn network
     environment:
-      - PUID=${PUID} # default user id, defined in .env
-      - PGID=${PGID} # default group id, defined in .env
-      - TZ=${TZ} # timezone, defined in .env
+      - PUID=${PUID}  # default user id, defined in .env
+      - PGID=${PGID}  # default group id, defined in .env
+      - TZ=${TZ}      # timezone, defined in .env
     volumes:
       - /etc/localtime:/etc/localtime:ro
-      - ${ROOT}/data/torrents/torrent-blackhole:/downloads # place where to put .torrent files for manual download
-      - ${ROOT}/config/jackett:/config # config files
+      - ${ROOT}/data/torrents/torrent-blackhole:/downloads    # place where to put .torrent files for manual download
+      - ${ROOT}/config/jackett:/config                        # config files
 
   # nzbget:
   #   container_name: nzbget
@@ -74,13 +74,13 @@ services:
     restart: unless-stopped
     network_mode: host
     environment:
-      - PUID=${PUID} # default user id, defined in .env
-      - PGID=${PGID} # default group id, defined in .env
-      - TZ=${TZ} # timezone, defined in .env
+      - PUID=${PUID}  # default user id, defined in .env
+      - PGID=${PGID}  # default group id, defined in .env
+      - TZ=${TZ}      # timezone, defined in .env
     volumes:
       - /etc/localtime:/etc/localtime:ro
-      - ${ROOT}/config/sonarr:/config # config files
-      - ${ROOT}/data:/data # data folder
+      - ${ROOT}/config/sonarr:/config     # config files
+      - ${ROOT}/data:/data                # data folder
 
   radarr:
     container_name: radarr
@@ -88,27 +88,25 @@ services:
     restart: unless-stopped
     network_mode: host
     environment:
-      - PUID=${PUID} # default user id, defined in .env
-      - PGID=${PGID} # default group id, defined in .env
-      - TZ=${TZ} # timezone, defined in .env
+      - PUID=${PUID}  # default user id, defined in .env
+      - PGID=${PGID}  # default group id, defined in .env
+      - TZ=${TZ}      # timezone, defined in .env
     volumes:
       - /etc/localtime:/etc/localtime:ro
-      - ${ROOT}/config/radarr:/config # config files
-      # - ${ROOT}/data/media-library/movies:/movies # movies folder
-      # - ${ROOT}/data/torrents:/downloads # download folder
-      - ${ROOT}/data:/data # data folder
+      - ${ROOT}/config/radarr:/config     # config files
+      - ${ROOT}/data:/data                # data folder
 
   plex:
     container_name: plex
     image: plexinc/pms-docker:latest
     restart: unless-stopped
     environment:
-      - TZ=${TZ} # timezone, defined in .env
+      - TZ=${TZ}      # timezone, defined in .env
     network_mode: host
     volumes:
-      - ${ROOT}/config/plex/db:/config # plex database
-      - ${ROOT}/config/plex/transcode:/transcode # temp transcoded files
-      - ${ROOT}/data/media-library:/data/media-library # media library
+      - ${ROOT}/config/plex/db:/config                  # plex database
+      - ${ROOT}/config/plex/transcode:/transcode        # temp transcoded files
+      - ${ROOT}/data/media-library:/data/media-library  # media library
 
   bazarr:
     container_name: bazarr
@@ -116,13 +114,13 @@ services:
     restart: unless-stopped
     network_mode: host
     environment:
-      - PUID=${PUID} # default user id, defined in .env
-      - PGID=${PGID} # default group id, defined in .env
-      - TZ=${TZ} # timezone, defined in .env
-      - UMASK_SET=022 #optional
+      - PUID=${PUID}  # default user id, defined in .env
+      - PGID=${PGID}  # default group id, defined in .env
+      - TZ=${TZ}      # timezone, defined in .env
+      - UMASK_SET=022 # optional
     volumes:
-      - ${ROOT}/config/bazarr:/config # config files
-      - ${ROOT}/data/media-library/movies:/movies # movies folder
-      - ${ROOT}/data/media-library/tv:/tv # tv shows folder
+      - ${ROOT}/config/bazarr:/config                   # config files
+      - ${ROOT}/data/media-library/movies:/movies       # movies folder
+      - ${ROOT}/data/media-library/tv:/tv               # tv shows folder
       
 
