@@ -9,6 +9,7 @@ All automated.
 
 - [HTPC Download Box](#htpc-download-box)
   - [Table of Contents](#table-of-contents)
+  - [ToDo](#todo)
   - [Overview](#overview)
     - [Monitor TV shows/movies with Sonarr and Radarr](#monitor-tv-showsmovies-with-sonarr-and-radarr)
     - [Search for releases automatically with Usenet and torrent indexers](#search-for-releases-automatically-with-usenet-and-torrent-indexers)
@@ -50,6 +51,15 @@ All automated.
       - [Bazarr Configuration](#bazarr-configuration)
   - [Manage it all from your mobile](#manage-it-all-from-your-mobile)
   - [Going Further](#going-further)
+
+## ToDo
+
+- update documentation on volume mapping changes (servarr recommended settings)
+- integrate usenet client as download client. (nzbget is EOL, so using recommended sanzbd)
+- Prowlarr integration to replace Jackett
+- calibre integration for ebooks
+- Audiobookshelf integration as audiobook media player
+- Tailscale vpn for management of services outside the private network.
 
 ## Overview
 
@@ -193,6 +203,28 @@ After ensuring Vagrant is installed on your machine:
 1. Run `vagrant up` to bootstrap the vagrant box
 2. Run `vagrant ssh` to ssh into the box
 3. Use the default `192.168.7.7` IP to access the box services from a local machine
+
+### Open Firewall ports.
+
+When the management GUI's need to be accessed from outside the server, there will need to be some ports opened on the firewall.
+Please make sure that these services are never exposed directly to the public internet, with the only possible exception being the plex server.
+
+In the future we'll look at integrating a tailscale vpn endpoint to allow management from outside the network.
+
+Opening the following ports allows for access to the GUI of the services that are running on the 'host' network.
+Ports for services behind the gluetun firewall (deluge & jackett) are exposed in the docker compose file and docker takes care of that. 
+
+```sh
+# Commands for RHEL's firewalld
+sudo firewall-cmd --zone=public --permanent --add-port=8989/tcp  # Sonarr
+sudo firewall-cmd --zone=public --permanent --add-port=7878/tcp  # Radarr
+sudo firewall-cmd --zone=public --permanent --add-port=6767/tcp  # Bazaar
+sudo firewall-cmd --zone=public --permanent --add-port=32400/tcp # Plex
+sudo firewall-cmd --zone=public --permanent --add-port=8787/tcp  # Readarr
+# sudo firewall-cmd --zone=public --permanent --add-port=8080/tcp  # Calibre
+
+sudo firewall-cmd --reload
+```
 
 ### Setup environment variables
 
