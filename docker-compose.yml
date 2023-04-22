@@ -72,7 +72,10 @@ services:
     container_name: sonarr
     image: linuxserver/sonarr:latest
     restart: unless-stopped
-    network_mode: host
+    extra_hosts:
+      - "media:${MC_IP}"
+    ports:
+      - 8989:8989/tcp # GUI
     environment:
       - PUID=${PUID}  # default user id, defined in .env
       - PGID=${PGID}  # default group id, defined in .env
@@ -86,7 +89,10 @@ services:
     container_name: radarr
     image: linuxserver/radarr:latest
     restart: unless-stopped
-    network_mode: host
+    extra_hosts:
+      - "media:${MC_IP}"
+    ports:
+      - 7878:7878/tcp # GUI
     environment:
       - PUID=${PUID}  # default user id, defined in .env
       - PGID=${PGID}  # default group id, defined in .env
@@ -102,7 +108,8 @@ services:
     restart: unless-stopped
     environment:
       - TZ=${TZ}      # timezone, defined in .env
-    network_mode: host
+    ports:
+      - 32400:32400/tcp # GUI
     volumes:
       - ${ROOT}/config/plex/db:/config                  # plex database
       - ${ROOT}/config/plex/transcode:/transcode        # temp transcoded files
@@ -112,7 +119,8 @@ services:
     container_name: bazarr
     image: linuxserver/bazarr
     restart: unless-stopped
-    network_mode: host
+    ports:
+      - 6767:6767/tcp # GUI
     environment:
       - PUID=${PUID}  # default user id, defined in .env
       - PGID=${PGID}  # default group id, defined in .env

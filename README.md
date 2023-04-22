@@ -229,6 +229,8 @@ PUID=1000
 PGID=1000
 # The directory where data and configuration will be stored.
 ROOT=/media
+# Mediacenter IP
+MC_IP=192.168.0.123
 # Gluetun VPN variables (private internet access only)
 VPNUSER=<vpn-username>
 VPNPASS=<vpn-password>
@@ -239,6 +241,7 @@ Things to notice:
 
 - TZ is based on your [tz time zone](https://en.wikipedia.org/wiki/List_of_tz_database_time_zones).
 - The PUID and PGID are your user's ids. Find them with `id $USER`.
+- The MC_IP is the local ip of the host system. It's assumed to be static and will be used for communication between the the services that are located on the gluetun network, and those outside it.
 - This file should be in the same directory as your `docker-compose.yml` file so the values can be read in.
 
 ### Setup Deluge
@@ -466,7 +469,8 @@ We'll use the host network directly, and run our container with the following co
     restart: unless-stopped
     environment:
       - TZ=${TZ}      # timezone, defined in .env
-    network_mode: host
+    ports:
+      - 32400:32400/tcp # GUI
     volumes:
       - ${ROOT}/config/plex/db:/config                  # plex database
       - ${ROOT}/config/plex/transcode:/transcode        # temp transcoded files
@@ -533,7 +537,10 @@ Let's go:
     container_name: sonarr
     image: linuxserver/sonarr:latest
     restart: unless-stopped
-    network_mode: host
+    extra_hosts:
+      - "media:${MC_IP}"
+    ports:
+      - 8989:8989/tcp # GUI
     environment:
       - PUID=${PUID}  # default user id, defined in .env
       - PGID=${PGID}  # default group id, defined in .env
@@ -625,7 +632,10 @@ Radarr is _very_ similar to Sonarr. You won't be surprised by this configuration
     container_name: radarr
     image: linuxserver/radarr:latest
     restart: unless-stopped
-    network_mode: host
+    extra_hosts:
+      - "media:${MC_IP}"
+    ports:
+      - 7878:7878/tcp # GUI
     environment:
       - PUID=${PUID}  # default user id, defined in .env
       - PGID=${PGID}  # default group id, defined in .env
@@ -715,7 +725,8 @@ Believe it or not, we will be using yet another docker container from linuxserve
     container_name: bazarr
     image: linuxserver/bazarr
     restart: unless-stopped
-    network_mode: host
+    ports:
+      - 6767:6767/tcp # GUI
     environment:
       - PUID=${PUID}  # default user id, defined in .env
       - PGID=${PGID}  # default group id, defined in .env
