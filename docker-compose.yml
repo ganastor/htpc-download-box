@@ -12,7 +12,6 @@ services:
       - 8388:8388/udp # Shadowsocks
       - 8000:8000/tcp # Built-in HTTP control server
       - 8112:8112/tcp # Deluge GUI
-      - 9117:9117/tcp # Jackett GUI
     volumes:
       - ${ROOT}/config/gluetun:/gluetun
     environment:
@@ -26,6 +25,8 @@ services:
       - PASSWORD=${VPNPASS}  
       # All VPN providers but Mullvad
       - REGION=${VPNREGION} 
+      - HTTPPROXY=on
+      - HTTPPROXY_LOG=on
     restart: unless-stopped
 
   deluge:
@@ -40,33 +41,6 @@ services:
     volumes:
       - ${ROOT}/data/torrents:/data/torrents    # downloads folder
       - ${ROOT}/config/deluge:/config           # config files
-
-  jackett:
-    container_name: jackett
-    image: linuxserver/jackett:latest
-    restart: unless-stopped
-    network_mode: service:gluetun # run on the vpn network
-    environment:
-      - PUID=${PUID}  # default user id, defined in .env
-      - PGID=${PGID}  # default group id, defined in .env
-      - TZ=${TZ}      # timezone, defined in .env
-    volumes:
-      - /etc/localtime:/etc/localtime:ro
-      - ${ROOT}/data/torrents/torrent-blackhole:/downloads    # place where to put .torrent files for manual download
-      - ${ROOT}/config/jackett:/config                        # config files
-
-  # nzbget:
-  #   container_name: nzbget
-  #   image: linuxserver/nzbget:latest
-  #   restart: unless-stopped
-  #   network_mode: host
-  #   environment:
-  #     - PUID=${PUID} # default user id, defined in .env
-  #     - PGID=${PGID} # default group id, defined in .env
-  #     - TZ=${TZ} # timezone, defined in .env
-  #   volumes:
-  #     - ${ROOT}/downloads:/downloads # download folder
-  #     - ${ROOT}/config/nzbget:/config # config files
 
   sonarr:
     container_name: sonarr
@@ -101,6 +75,22 @@ services:
       - /etc/localtime:/etc/localtime:ro
       - ${ROOT}/config/radarr:/config     # config files
       - ${ROOT}/data:/data                # data folder
+
+  prowlarr:
+    container_name: prowlarr
+    image: linuxserver/prowlarr:latest
+    restart: unless-stopped
+    extra_hosts:
+      - "media:${MC_IP}"
+    ports:
+      - 9696:9696/tcp # GUI
+    environment:
+      - PUID=${PUID}  # default user id, defined in .env
+      - PGID=${PGID}  # default group id, defined in .env
+      - TZ=${TZ}      # timezone, defined in .env
+    volumes:
+      - /etc/localtime:/etc/localtime:ro
+      - ${ROOT}/config/prowlarr:/config     # config files
 
   plex:
     container_name: plex

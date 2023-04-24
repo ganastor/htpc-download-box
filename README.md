@@ -27,19 +27,19 @@ All automated.
       - [Introduction](#introduction)
       - [privateinternetaccess.com custom setup](#privateinternetaccesscom-custom-setup)
       - [Docker container](#docker-container-1)
-    - [Setup Jackett](#setup-jackett)
-      - [Docker container](#docker-container-2)
-      - [Configuration and usage](#configuration-and-usage)
     - [Setup NZBGet](#setup-nzbget)
-      - [Docker container](#docker-container-3)
+      - [Docker container](#docker-container-2)
       - [Configuration and usage](#configuration-and-usage)
     - [Setup Plex](#setup-plex)
       - [Media Server Docker Container](#media-server-docker-container)
       - [Configuration](#configuration-1)
       - [Setup Plex clients](#setup-plex-clients)
+    - [Setup Prowlarr](#setup-prowlarr)
+      - [Docker container](#docker-container-3)
+      - [Configuration and usage](#configuration-2)
     - [Setup Sonarr](#setup-sonarr)
       - [Docker container](#docker-container-4)
-      - [Configuration](#configuration-2)
+      - [Configuration](#configure-sonarr)
       - [Give it a try](#give-it-a-try)
     - [Setup Radarr](#setup-radarr)
       - [Docker container](#docker-container-5)
@@ -350,6 +350,8 @@ services:
       - PASSWORD=${VPNPASS}  
       # All VPN providers but Mullvad
       - REGION=${VPNREGION} 
+      - HTTPPROXY=on
+      - HTTPPROXY_LOG=on
     restart: unless-stopped
 
   deluge:
@@ -374,48 +376,7 @@ Get the torrent magnet link there, put it in Deluge, wait a bit, then you should
 
 ![Torrent guard](img/torrent_guard.png)
 
-### Setup Jackett
-
-[Jackett](https://github.com/Jackett/Jackett) translates request from Sonarr and Radarr to searches for torrents on popular torrent websites, even though those website do not have a sandard common APIs (to be clear: it parses html for many of them :)).
-
-#### Docker container
-
-No surprise: let's use linuxserver.io container !
-
-```yaml
-  jackett:
-    container_name: jackett
-    image: linuxserver/jackett:latest
-    restart: unless-stopped
-    network_mode: service:gluetun # run on the vpn network
-    environment:
-      - PUID=${PUID}  # default user id, defined in .env
-      - PGID=${PGID}  # default group id, defined in .env
-      - TZ=${TZ}      # timezone, defined in .env
-    volumes:
-      - /etc/localtime:/etc/localtime:ro
-      - ${ROOT}/data/torrents/torrent-blackhole:/downloads    # place where to put .torrent files for manual download
-      - ${ROOT}/config/jackett:/config                        # config files
-```
-
-Nothing particular in this configuration, it's pretty similar to other linuxserver.io images.
-An interesting setting is the torrent blackhole directory. When you do manual searches, Jackett will put `.torrent` files there, to be grabbed by your torrent client directly (Deluge for instance).
-
-As usual, run with `docker-compose up -d`.
-
-#### Configuration and usage
-
-Jackett web UI is available on port 9117.
-
-![Jacket empty providers list](img/jackett_empty.png)
-
-Configuration is available at the bottom of the page. Disable auto-update (It is docker best practices to pull a new container image if the app has been updated), and to set `/downloads` as the blackhole directory.
-
-Click on `Add Indexer` and add any torrent indexer that you like. I added 1337x, cpasbien, RARBG, The Pirate Bay and YGGTorrent (need a user/password).
-
-You can now perform a manual search across multiple torrent indexers in a clean interface with no trillion ads pop-up everywhere. Then choose to save the .torrent file to the configured blackhole directory, ready to be picked up by Deluge automatically !
-
-![Jacket manual search](img/jackett_manual.png)
+The http proxy is also enabled in the above config. This way the proxy feature of prowlarr can be used to proxy the calls being made to indexers through the gluetun vpn. 
 
 ### Setup NZBGet
 
@@ -524,6 +485,54 @@ Also the old good Plex Home Theater is still available, in an open source versio
 
 Personal choice: after using OpenPHT for a while I'll give Plex Media Player a try. I might miss the ability to live-edit subtitle offset, but Bazarr is supposed to do its job. We'll see.
 
+### Setup Prowlarr
+
+#### Docker container
+
+We'll load the Prowlarr image from linuxserver too:
+
+```yaml
+  prowlarr:
+    container_name: prowlarr
+    image: linuxserver/prowlarr:latest
+    restart: unless-stopped
+    extra_hosts:
+      - "media:${MC_IP}"
+    ports:
+      - 9696:9696/tcp # GUI
+    environment:
+      - PUID=${PUID}  # default user id, defined in .env
+      - PGID=${PGID}  # default group id, defined in .env
+      - TZ=${TZ}      # timezone, defined in .env
+    volumes:
+      - /etc/localtime:/etc/localtime:ro
+      - ${ROOT}/config/prowlarr:/config     # config files
+```
+
+`docker-compose up -d`
+
+#### Configuration
+
+Prowlarr should be available on `localhost:9696`. Go straight to the `Download Clients` page under the `Settings` tab. Add the deluge client details as shown below.
+Make sure to fill in the right password if the deluge default password has been changed.
+
+Use the `Test` button to test the connection.
+
+![Prowlarr Download Client](img/prowlarr_add_dwl_client.png)
+
+This download client will only be used if searches are made through prowlarr itself.
+Searches that are made through other Servarr apps ( Sonarr, Radarr or Readarr ) will use the downloaders configured there.
+
+Under `Settings` , `Indexer` there's an option to add the proxy that was enabled in the gluetun vpn container and use it to route requests to different indexers through the vpn tunnel. This hides this traffic.
+Make sure that a tag is provided, these tags will have to be added to the indexers that need to use the proxy.
+
+![Prowlarr indexer proxy](img/prowlarr_add_proxy.png)
+
+`Indexers` is the important tab: that's where Prowlarr will manage which indexers to use. Torrent indexers are quite straightforward to add. Nowadays a lot of Usenet indexers are relying on Newznab protocol: fill-in the URL and API key you are using. You can find some indexers on this [subreddit wiki](https://www.reddit.com/r/usenet/wiki/indexers). It's nice to use several. You can find suggestions on Newznab presets. Some of these indexers provide free accounts with a limited number of API calls, you'll have to pay to get more. Usenet-crawler is one of the best free indexers out there.
+
+Make sure that the proxy tag is added to the indexers and that the connection is tested. 
+Proxy logging is on, so the gluetun logs should show connections to the different indexers. This allows verification that the proxy works.
+
 ### Setup Sonarr
 
 #### Docker container
@@ -553,12 +562,12 @@ Let's go:
 
 `docker-compose up -d`
 
-Sonarr web UI listens on port 8989 by default. You need to mount your full data directory. Both the directory where the downloaders will drop the complete files and the end location where the media player will find the processed content.
-By mounting the whole directory, we give sonarr full controll to use atomic (instant) moves between folders as well as hard link functionality to avoid duplication.
+Sonarr web UI listens on port 8989 by default. The full data directoryn needs to be mounted in the container. Both the directory where the downloaders will drop the complete files and the end location where the media player will find the processed content.
+By mounting the whole directory, sonarr gets full control to use atomic (instant) moves between folders as well as hard link functionality to avoid data duplication. (Especially handy on setups with limited storage.)
 
 Check out the [planned paths](https://wiki.servarr.com/docker-guide#consistent-and-well-planned-paths) documentation on the [servarr wiki](https://wiki.servarr.com/) for a more detailed explanation.
 
-#### Configuration
+#### Configure Sonarr
 
 Sonarr should be available on `localhost:8989`. Go straight to the `Settings` tab.
 
@@ -568,15 +577,13 @@ Enable `Ignore Deleted Episodes`: if you delete files once you have watched them
 In `Media Management`, you can choose to rename episodes automatically.
 In `profiles` you can set new quality profiles, default ones are fairly good. There is an important option at the bottom of the page: do you want to give priority to Usenet or Torrents for downloading episodes? 
 
-`Indexers` is the important tab: that's where Sonarr will grab information about released episodes. Nowadays a lot of Usenet indexers are relying on Newznab protocol: fill-in the URL and API key you are using. You can find some indexers on this [subreddit wiki](https://www.reddit.com/r/usenet/wiki/indexers). It's nice to use several ones since there are quite volatile. You can find suggestions on Sonarr Newznab presets. Some of these indexers provide free accounts with a limited number of API calls, you'll have to pay to get more. Usenet-crawler is one of the best free indexers out there.
+`Indexers` is an important tab: that's where Sonarr will grab information about released episodes. This tab will be populated with the indexers that have been setup in Prowlarr.
+For this we will have to add Sonarr to the Prowlarr setup.
 
-For torrents indexers, Activate Torznab custom indexers that point to the local Jackett service. This allows searches across all torrent indexers configured in Jackett. You have to configure them one by one though.
-
-Get torrent indexers Jackett proxy URLs by clicking `Copy Torznab Feed` in Jackett Web UI. Use the global Jackett API key as authentication.
-
-![Jackett indexers](img/jackett_indexers.png)
-
-![Sonarr torznab add](img/sonarr_torznab.png)
+In the Prowlarr GUI, Add the sonarr application under `Settings` , `Applications`.
+Make sure that "Full Sync" is selected and the correct API key for your sonarr setup.
+You can find the api key in the Sonarr GUI under `Settings` , `General`.
+Offcourse, active API keys should be kept secret at all times. The ones in the screenshots were for testing purposes and the setup is no longer active.
 
 `Download Clients` tab is where we'll configure links with our two download clients: NZBGet and Deluge.
 There are existing presets for these 2 that we'll fill with the proper configuration.
@@ -591,6 +598,9 @@ Enable `Advanced Settings`, and tick `Remove` in the Completed Download Handling
 
 In `Connect` tab, we'll configure Sonarr to send notifications to Plex when a new episode is ready:
 ![Sonarr Plex configuration](img/sonarr_plex.png)
+
+The `Authenticate with Plex.tv` button will go to the plex.tv login page.
+Logging into a plex.tv account through this button will link the server and it's libraries to the account.
 
 #### Give it a try
 
@@ -649,36 +659,8 @@ Radarr is _very_ similar to Sonarr. You won't be surprised by this configuration
 #### Configuration
 
 Radarr Web UI is available on port 7878.
-Let's go straight to the `Settings` section.
 
-In `Media Management`, you can choose whether or not to enable automatic renaming. Enable `Ignore Deleted Movies` to make sure movies that are deleted won't be downloaded again by Radarr. Disable `Use Hardlinks instead of Copy` if you prefer to avoid messing around what's in the download area and what's in the movies area.
-
-In `Profiles` you can set new quality profiles, default ones are fairly good. There is an important option at the bottom of the page: do you want to give priority to Usenet or Torrents for downloading episodes? 
-
-As for Sonarr, the `Indexers` section is where you'll configure your torrent and nzb sources.
-
-Nowadays a lot of Usenet indexers are relying on Newznab protocol: fill-in the URL and API key you are using. You can find some indexers on this [subreddit wiki](https://www.reddit.com/r/usenet/wiki/indexers). It's nice to use several ones since there are quite volatile. You can find suggestions on Radarr Newznab presets. Some of these indexers provide free accounts with a limited number of API calls, you'll have to pay to get more. Usenet-crawler is one of the best free indexers out there.
-For torrents indexers, Activate Torznab custom indexers that point to the local Jackett service. This allows searches across all torrent indexers configured in Jackett. You have to configure them one by one though.
-
-Get torrent indexers Jackett proxy URLs by clicking `Copy Torznab Feed`. Use the global Jackett API key as authentication.
-
-![Jackett indexers](img/jackett_indexers.png)
-
-![Sonarr torznab add](img/sonarr_torznab.png)
-
-`Download Clients` tab is where we'll configure links with our two download clients: NZBGet and Deluge.
-There are existing presets for these 2 that we'll fill with the proper configuration.
-
-NZBGet configuration:
-![Sonarr NZBGet configuration](img/sonarr_nzbget.png)
-
-Deluge configuration:
-![Sonarr Deluge configuration](img/sonarr_deluge.png)
-
-Enable `Advanced Settings`, and tick `Remove` in the Completed Download Handling section. This tells Radarr to remove torrents from deluge once processed.
-
-In `Connect` tab, we'll configure Radarr to send notifications to Plex when a new episode is ready:
-![Sonarr Plex configuration](img/sonarr_plex.png)
+The configuration of Radarr is a copy of the [Sonar configuration](#configuration-3).
 
 #### Give it a try
 
@@ -744,36 +726,35 @@ The Web UI for Bazarr will be available on port 6767. Load it up and you will be
 
 ![Bazarr configuration](img/bazarr_start.png)
 
-You can leave this page blank and go straight to the next page, "Subtitles". There are many options for different subtitle providers to use, but in this guide I'll be using [Open Subtitles](https://www.opensubtitles.org/). If you don't have an account with them, head on over to the [Registration page](https://www.opensubtitles.org/en/newuser) and make a new account. Then all you need to do is tick the box for OpenSubtitles and fill in your new account details.
+This page can be left blank, The next page, `Subtitles` requires more configuration. There are many options for different subtitle providers to use, an example is [Open Subtitles](https://www.opensubtitles.org/). An account is required and can be made on [Registration page](https://www.opensubtitles.org/en/newuser). To enable this provide, the box will need to be checked OpenSubtitles and the account details provided.
 
 ![Bazarr Open Subtitles](img/bazarr_opensubtitles.png)
 
-You can always add more subtitle providers if you want, figure out which ones are good for you!
-
-Next scroll to the bottom of the screen where you will find your language settings. 
+Other providers can be added as required.
+The language settings are located on the bottom of the screen.
 
 ![Bazarr Languages](img/bazarr_language.png)
 
-Click next and we will be on the Sonarr setup page. For this part we will need our Sonarr API key. To get this, open up sonarr in a separate tab and navigate to `Settings > General > Security` and copy the api key listed there.
+The following page is the Sonarr setup page. This part requiures the sonarr api key. This key has been retrieved before when connection prowlarr to sonarr.
 
-![Sonarr API Key](img/bazarr_sonarr_api.png)
+![Sonarr API Key](img/sonarr_api_key_location.png)
 
-Head back over Bazarr and check the "Use Sonarr" box and some settings will pop up. Paste your API key in the proper field, and you can leave the other options default. If you would like, you can tick the box for "Download Only Monitored" which will prevent Bazarr from downloading subtitles for tv shows you have in your Sonarr library but have possibly deleted from your drive. Then click "Test" and Sonarr should be all set!
+Check the `Use Sonarr` box and enter the settings as provided. Remember to use the correct api key, instead of the one in the screenshot. 
+`Download Only Monitored` which will prevent Bazarr from downloading subtitles for tv shows located in the Sonarr library but that is possibly deleted from storage. 
+Click `Test` to verify the connection and `Save` to save the settings. Sonarr should be all set!
 
 ![Bazarr Sonarr Setup](img/bazarr_sonarr.png)
 
-The next step is connecting to Radarr and the process should be identical. The only difference is that you'll have to grab your Radarr API key instead of Sonarr. Once that's done click Finish and you will be brought to your main screen where you will be greeted with a message saying that you need to restart. Click this and Bazarr should reload. Once that's all set, you should be good to go! Bazarr should now automatically downlaod subtitles for the content you add through Radarr and Sonarr that is not already found within the media files themselves.
+The next step is connecting to Radarr and the process should be identical. The only difference is that the Radarr hostname , port and API key are required instead of Sonarr.
+Once that's done Bazarr will require a restart after which Bazarr should automatically download subtitles for the content added through Radarr and Sonarr that is not already found within the media files themselves.
 
-If you have any problems, check out the [wiki page](https://github.com/morpheus65535/bazarr/wiki/First-time-installation-configuration) for Bazarr and you should probably find your answer.
+Additional information can be found on the [Bazarr wiki page](https://github.com/morpheus65535/bazarr/wiki/First-time-installation-configuration).
 
 ## Manage it all from your mobile
 
-On Android, you can use [nzb360](http://nzb360.com) to manage NZBGet, Deluge, Sonarr and Radarr.
-It's a beautiful and well-thinked app. Easy to get a look at upcoming tv shows releases (eg. "when will the next f\*\*cking Game of Thrones episode be released?").
+On Android, [nzb360](http://nzb360.com) is available to manage NZBGet, Deluge, Sonarr and Radarr.
 
 ![NZB360](img/nzb360.png)
-
-The free version does not allow you to add new shows. Consider switching to the paid version (6\$) and support the developer.
 
 ## Going Further
 
