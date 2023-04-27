@@ -55,7 +55,7 @@ All automated.
 ## ToDo
 
 - update documentation on volume mapping changes (servarr recommended settings)
-- integrate usenet client as download client. (nzbget is EOL, so using recommended SABnzbd)
+- integrate usenet client as download client. (nzbget is EOL, so will be using recommended SABnzbd --- Not implemented yet)
 - Prowlarr integration to replace Jackett
 - calibre integration for ebooks
 - Audiobookshelf integration as audiobook media player
@@ -65,7 +65,7 @@ All automated.
 
 _Disclaimer: I'm not encouraging/supporting piracy, this is for information purpose only._
 
-How does it work? This is a Proof of Concept setup of several tools integrated together. They're all open-source, and deployed as Docker containers.
+How does it work? This is a Proof of Concept setup of several tools integrated together. They're all open-source and deployed as Docker containers.
 It is an interesting way to learn about multiple services, each running in their own container interacting with eachother.
 
 The common workflow is detailed in this first section to give you an idea of how things work.
@@ -90,12 +90,10 @@ Sonarr and Radarr can both rely on two different ways to download files:
 - Usenet (newsgroups) bin files. That's the historical and principal option, for several reasons: consistency and quality of the releases, download speed, indexers organization, etc. Often requires a paid subscription to newsgroup servers.
 - Torrents. That's the new player in town, for which support has improved a lot lately.
 
-I'm using both systems simultaneously, torrents being used only when a release is not found on newsgroups, or when the server is down. At some point I might switch to torrents only, which work really fine as well.
-
 Files are searched automatically by Sonarr/Radarr through a list of _indexers_ that you have to configure. Indexers are APIs that allow searching for particular releases organized by categories. Think browsing the Pirate Bay programmatically. This is a pretty common feature for newsgroups indexers that respect a common API (called `Newznab`).
-However this common protocol does not really exist for torrent indexers. That's why we'll be using another tool called [Jackett](https://github.com/Jackett/Jackett). You can consider it as a local proxy API for the most popular torrent indexers. It searches and parse information from heterogeneous websites.
+However this common protocol does not really exist for torrent indexers. That's why a tool called [Prowlarr](https://wiki.servarr.com/prowlarr) is used. You can consider it as a local proxy API for the most popular torrent indexers. It searches and parses information from heterogeneous websites.
 
-![Jackett indexers](img/jackett_indexers.png)
+![Prowlarr indexers](img/prowlarr_indexers.png)
 
 The best release matching your criteria is selected by Sonarr/Radarr (eg. non-blacklisted 1080p release with enough seeds). Then the download is passed on to another set of tools.
 
@@ -110,11 +108,11 @@ Both are daemons coming with a nice Web UI, making them perfect candidates for b
 
 Both are very standard and popular tools. 
 
-For security and anonymity reasons, Deluge runs behind a VPN connection. All incoming/outgoing traffic from deluge is encrypted and goes out to an external VPN server. Other service stay on the local network. This is done through Docker networking stack (more to come on the next paragraphs).
+For security and anonymity reasons, Deluge runs behind a VPN connection. All incoming/outgoing traffic from deluge is encrypted and goes out to an external VPN server. Other services stay on the local network. This is done through the Docker networking stack (more to come on the next paragraphs).
 
 ### Organize libraries and play videos with Plex
 
-[Plex](https://www.plex.tv/) Media Server organize all media as libraries. You can set up one for TV shows and another one for movies.
+[Plex](https://www.plex.tv/) Media Server organize all media as libraries. You can set up one for TV shows and another one for movies or audio.
 It automatically grabs metadata for each new release (description, actors, images, release date).
 
 ![Plex Web UI](img/plex_macbook.jpg)
@@ -127,12 +125,12 @@ The server has transcoding abilities: it automatically transcodes video quality 
 
 ## Hardware configuration
 
-I'm using a [Virtualbox](https://www.virtualbox.org/) VM (6 cores, 8 GB RAM) with 1TB disk for data. It is enough for basic setup and testing of this application stack.
+My testing environment is a [Virtualbox](https://www.virtualbox.org/) VM (6 cores, 8 GB RAM) with 1TB disk for data. It is enough for basic setup and testing of this application stack.
 The amount of cores and RAM are at this level to enable (some) transcoding by the plex server.
 
 It has Almalinux 8.6 with Docker installed.
 
-You can also use a Raspberry Pi, a Synology NAS, a Windows or Mac computer. The stack should work fine on all these systems, but you'll have to adapt the Docker stack below to your OS. I'll only focus on a standard Linux installation here.
+You can also use a Raspberry Pi, a Synology NAS, a Windows or Mac computer. The stack should work fine on all these systems, but you'll have to adapt the Docker stack below to your OS. I'll only focus on a standard Linux installation here, more specificly a RHEL based distro. This is just personal preference.
 
 ## Software stack
 
@@ -142,7 +140,7 @@ You can also use a Raspberry Pi, a Synology NAS, a Windows or Mac computer. The 
 
 - [Deluge](http://deluge-torrent.org): torrent downloader with a web UI
 - [NZBGet](https://nzbget.net): usenet downloader with a web UI
-- [Jackett](https://github.com/Jackett/Jackett): API to search torrents from multiple indexers
+- [Prowlarr](https://wiki.servarr.com/prowlarr): API to search torrents and usenet from multiple indexers
 - [Bazarr](https://www.bazarr.media/): A companion tool for Radarr and Sonarr which will automatically pull subtitles for all of your TV and movie downloads.
 
 **Download orchestration**:
@@ -585,7 +583,9 @@ Make sure that "Full Sync" is selected and the correct API key for your sonarr s
 You can find the api key in the Sonarr GUI under `Settings` , `General`.
 Offcourse, active API keys should be kept secret at all times. The ones in the screenshots were for testing purposes and the setup is no longer active.
 
-`Download Clients` tab is where we'll configure links with our two download clients: NZBGet and Deluge.
+![Add Sonarr to PRowlarr](img/prowlarr_add_sonarr.png)
+
+The `Download Clients` tab is where we'll configure links with our two download clients: NZBGet and Deluge.
 There are existing presets for these 2 that we'll fill with the proper configuration.
 
 NZBGet configuration:
