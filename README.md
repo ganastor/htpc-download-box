@@ -1,6 +1,6 @@
 # HTPC Download Box
 
-Sonarr / Radarr / Jackett / NZBGet / Deluge / Gluetun / Plex
+Sonarr / Radarr / Prowlarr / SABnzbd / Deluge / Gluetun / Plex
 
 TV shows and movies download, sort, with the desired quality and subtitles, behind a VPN (optional), ready to watch, in a beautiful media player.
 All automated.
@@ -19,32 +19,36 @@ All automated.
   - [Software stack](#software-stack)
   - [Installation guide](#installation-guide)
     - [Introduction](#introduction)
-    - [Install docker and docker-compose](#install-docker-and-docker-compose)
+    - [Install docker](#install-docker)
+    - [Premade docker-compose](#optional-use-premade-docker-compose)
+    - [Setup environment variables](#setup-environment-variables)
+    - [Create host directory structure](#create-host-directory-structure)
     - [Setup Deluge](#setup-deluge)
-      - [Docker container](#docker-container)
-      - [Configuration](#configuration)
+      - [Deluge Docker container](#deluge-docker-container)
+      - [Deluge Configuration](#deluge-configuration)
     - [Setup a VPN Container](#setup-a-vpn-container)
-      - [Introduction](#introduction)
+      - [VPN Introduction](#vpn-introduction)
       - [privateinternetaccess.com custom setup](#privateinternetaccesscom-custom-setup)
-      - [Docker container](#docker-container-1)
-    - [Setup NZBGet](#setup-nzbget)
-      - [Docker container](#docker-container-2)
-      - [Configuration and usage](#configuration-and-usage)
+      - [VPN Docker container](#vpn-docker-container)
+    - [Setup SABnzbd](#setup-sabnzbd)
+      - [Usenet Introduction](#usenet-introduction)
+      - [SABnzbd Docker container](#sabnzbd-docker-container)
+      - [SABnzbd Configuration](#sabnzbd-configuration)
     - [Setup Plex](#setup-plex)
       - [Media Server Docker Container](#media-server-docker-container)
-      - [Configuration](#configuration-1)
+      - [Configuration](#plex-configuration)
       - [Setup Plex clients](#setup-plex-clients)
     - [Setup Prowlarr](#setup-prowlarr)
-      - [Docker container](#docker-container-3)
-      - [Configuration and usage](#configuration-2)
+      - [Prowlarr Docker container](#prowlarr-docker-container)
+      - [Prowlarr Configuration](#prowlarr-configuration)
     - [Setup Sonarr](#setup-sonarr)
-      - [Docker container](#docker-container-4)
-      - [Configuration](#configure-sonarr)
-      - [Give it a try](#give-it-a-try)
+      - [Sonarr Docker container](#sonarr-docker-container)
+      - [Sonarr Configuration](#sonarr-configuration)
+      - [Give Sonarr a try](#give-sonarr-a-try)
     - [Setup Radarr](#setup-radarr)
-      - [Docker container](#docker-container-5)
-      - [Configuration](#configuration-3)
-      - [Give it a try](#give-it-a-try-1)
+      - [Radarr Docker container](#radarr-docker-container)
+      - [Radarr Configuration](#radarr-configuration)
+      - [Give Radarr a try](#give-radarr-a-try)
       - [Movie discovering](#movie-discovering)
     - [Setup Bazarr](#setup-bazarr)
       - [Bazarr Docker container](#bazarr-docker-container)
@@ -54,12 +58,10 @@ All automated.
 
 ## ToDo
 
-- update documentation on volume mapping changes (servarr recommended settings)
-- integrate usenet client as download client. (nzbget is EOL, so will be using recommended SABnzbd --- Not implemented yet)
-- Prowlarr integration to replace Jackett
-- calibre integration for ebooks
+- Calibre integration for ebooks
 - Audiobookshelf integration as audiobook media player
 - Tailscale vpn for management of services outside the private network.
+- Add Organizr to combine all GUIs on 1 site.
 
 ## Overview
 
@@ -101,7 +103,7 @@ The best release matching your criteria is selected by Sonarr/Radarr (eg. non-bl
 
 Sonarr and Radarr are plugged to downloaders for our 2 different systems:
 
-- [NZBGet](https://nzbget.net/) handles Usenet (newsgroups) binary downloads.
+- [SABnzbd](https://sabnzbd.org/) handles Usenet (newsgroups) binary downloads.
 - [Deluge](http://deluge-torrent.org/) handles torrent download.
 
 Both are daemons coming with a nice Web UI, making them perfect candidates for being installed on a server. Sonarr & Radarr already have integration with them, meaning they rely on each service API to pass on downloads, request download status and handle finished downloads.
@@ -139,7 +141,7 @@ You can also use a Raspberry Pi, a Synology NAS, a Windows or Mac computer. The 
 **Downloaders**:
 
 - [Deluge](http://deluge-torrent.org): torrent downloader with a web UI
-- [NZBGet](https://nzbget.net): usenet downloader with a web UI
+- [SABnzbd](https://sabnzbd.org/): usenet downloader with a web UI
 - [Prowlarr](https://wiki.servarr.com/prowlarr): API to search torrents and usenet from multiple indexers
 - [Bazarr](https://www.bazarr.media/): A companion tool for Radarr and Sonarr which will automatically pull subtitles for all of your TV and movie downloads.
 
@@ -163,7 +165,7 @@ You can also use a Raspberry Pi, a Synology NAS, a Windows or Mac computer. The 
 The idea is to set up all these components as Docker containers in a `docker-compose.yml` file.
 We'll reuse community-maintained images (special thanks to [linuxserver.io](https://www.linuxserver.io/) for many of them).
 I'm assuming you have some basic knowledge of Linux and Docker.
-A general-purpose `docker compose` file is maintained in this repo [here](https://github.com/kageRaken/htpc-download-box/blob/kage-master/docker-compose.yml).
+A general-purpose `docker compose` file is maintained in [this repo](https://github.com/kageRaken/htpc-download-box/blob/kage-master/docker-compose.yml).
 
 The stack is not really plug-and-play. You'll see that manual human configuration is required for most of these tools. Configuration is not fully automated (yet?), but is persisted on reboot. Some steps also depend on external accounts that you need to set up yourself (usenet indexers, torrent indexers, vpn server, plex account, etc.). We'll walk through it.
 
@@ -184,55 +186,36 @@ Make sure it works fine:
 
 ### (optional) Use premade docker-compose
 
-This tutorial will guide you along the full process of making your own docker-compose file and configuring every app within it, however, to prevent errors or to reduce your typing, you can also use the general-purpose docker-compose file provided in this repository.
+This tutorial will guide you along the full process of making your own docker-compose file and configuring every app within it, however, to prevent errors or to reduce typing, the general-purpose docker-compose file provided in this repository can be used.
 
-1. First, `git clone -b kage-master https://github.com/kageRaken/htpc-download-box.git` into a directory. This is where you will run the full setup from (note: this isn't the same as your media directory)
+1. First, `git clone -b master https://github.com/kageRaken/htpc-download-box.git` into a directory. This is where you will run the full setup from (note: this isn't the same as your media directory)
 2. Rename the `.env.example` file included in the repo to `.env`.
-3. Continue this guide, and the docker-compose file snippets you see are already ready for you to use. You'll still need to manually configure your `.env` file and other manual configurations.
-
-### Open Firewall ports.
-
-When the management GUI's need to be accessed from outside the server, there will need to be some ports opened on the firewall.
-Please make sure that these services are never exposed directly to the public internet, with the only possible exception being the plex server.
-
-In the future we'll look at integrating a tailscale vpn endpoint to allow management from outside the network.
-
-Opening the following ports allows for access to the GUI of the services that are running on the 'host' network.
-Ports for services behind the gluetun firewall (deluge & jackett) are exposed in the docker compose file and docker takes care of that. 
-
-```sh
-# Commands for RHEL's firewalld
-sudo firewall-cmd --zone=public --permanent --add-port=8989/tcp  # Sonarr
-sudo firewall-cmd --zone=public --permanent --add-port=7878/tcp  # Radarr
-sudo firewall-cmd --zone=public --permanent --add-port=6767/tcp  # Bazaar
-sudo firewall-cmd --zone=public --permanent --add-port=32400/tcp # Plex
-sudo firewall-cmd --zone=public --permanent --add-port=8787/tcp  # Readarr
-# sudo firewall-cmd --zone=public --permanent --add-port=8080/tcp  # Calibre
-
-sudo firewall-cmd --reload
-```
+3. Continue this guide, and the docker-compose file snippets are ready to use. The `.env` file will still need to be manually configured, just like the other manual configurations discussed below.
 
 ### Setup environment variables
 
-For each of these images, there is some unique configuration that needs to be done. Instead of editing the docker-compose file to hardcode these values in, we'll instead put these values in a .env file. A .env file is a file for storing environment variables that can later be accessed in a general-purpose docker-compose.yml file, like the example one in this repository.
+For each of these containers, there is some unique configuration that needs to be done. Instead of editing the docker-compose file to hardcode these values in, we'll instead put these values in a .env file. A .env file is a file for storing environment variables that can later be accessed in a general-purpose docker-compose.yml file, like the example one in this repository. Make a copy of the `.env.example` file and rename it to `.env`.
 
 Here is an example of what your `.env` file should look like, use values that fit for your setup.
 
 ```sh
 # Your timezone, https://en.wikipedia.org/wiki/List_of_tz_database_time_zones
-VPNTZ=Europe/Berlin
-TZ=Europe/Brussels
+VPNTZ_TORRENT=Europe/Berlin
+VPNTZ_USENET=Europe/Berlin
+TZ=Europe/Paris
 # UNIX PUID and PGID, find with: id $USER
 PUID=1000
 PGID=1000
 # The directory where data and configuration will be stored.
 ROOT=/media
-# Mediacenter IP
+# Mediacenter IP (replace with the actual ip of the mediacenter. 
+# This is required for the connection to the services hidden behind the vpn servers.
 MC_IP=192.168.0.123
 # Gluetun VPN variables (private internet access only)
 VPNUSER=<vpn-username>
 VPNPASS=<vpn-password>
-VPNREGION="SE Stockholm"
+VPNREGION_TORRENT="SE Stockholm"
+VPNREGION_USENET="SE Stockholm"
 ```
 
 Things to notice:
@@ -242,9 +225,47 @@ Things to notice:
 - The MC_IP is the local ip of the host system. It's assumed to be static and will be used for communication between the the services that are located on the gluetun network, and those outside it.
 - This file should be in the same directory as your `docker-compose.yml` file so the values can be read in.
 
+### Create host directory structure
+
+Create the required directory structure on the host system. The default setting has `/media` as the root directory. All config files are stored in `/media/config` while the data ends up in `/media/data`.
+The below data tree is required for the software stack to work as configured now. Changes can be made, but will require identical changes to the `.env` environment variables file and to the `docker-compose.yml` compose file.
+Make sure that the userid and groupid of the owner of the directory tree is identical to the id's in the `.env` environment variables file.
+
+```
+[mcuser@MediaCenter /]$ tree -dug /media | head
+/media
+├── [mcuser    mcuser   ]  config
+└── [mcuser    mcuser   ]  data
+    ├── [mcuser    mcuser   ]  media-library
+    │   ├── [mcuser    mcuser   ]  audiobooks
+    │   ├── [mcuser    mcuser   ]  books
+    │   ├── [mcuser    mcuser   ]  movies
+    │   └── [mcuser    mcuser   ]  tv
+    ├── [mcuser    mcuser   ]  torrents
+    │   ├── [mcuser    mcuser   ]  complete
+    │   ├── [mcuser    mcuser   ]  incomplete
+    │   ├── [mcuser    mcuser   ]  manual
+    │   └── [mcuser    mcuser   ]  torrent-blackhole
+    └── [mcuser    mcuser   ]  usenet
+        ├── [mcuser    mcuser   ]  blackhole
+        ├── [mcuser    mcuser   ]  complete
+        ├── [mcuser    mcuser   ]  incomplete
+        ├── [mcuser    mcuser   ]  manual
+        └── [mcuser    mcuser   ]  scripts
+
+[mcuser@MediaCenter /]$ id
+uid=1000(mcuser) gid=1000(mcuser) groups=1000(mcuser),10(wheel),992(docker) context=unconfined_u:unconfined_r:unconfined_t:s0-s0:c0.c1023
+[mcuser@MediaCenter /]$
+```
+
+In the above example, the entire directory tree is owned by the user `mcuser` which has userid `uid` and groupid `gid` 1000.
+This means that both the PUID and PGID values in the `.env` file have to be set to 1000.
+
+Having these id values correct allows for free file management across the container stack.
+
 ### Setup Deluge
 
-#### Docker container
+#### Deluge Docker container
 
 We'll use deluge Docker image from linuxserver, which runs both the deluge daemon and web UI in a single container.
 
@@ -272,7 +293,7 @@ Things to notice:
 Then run the container with `docker-compose up -d`.
 To follow container logs, run `docker-compose logs -f deluge`.
 
-#### Configuration
+#### Deluge Configuration
 
 You should be able to login on the web UI (`localhost:8112`, replace `localhost` by your machine ip if needed).
 
@@ -302,7 +323,7 @@ You can use the Web UI manually to download any torrent from a .torrent file or 
 
 ### Setup a VPN Container
 
-#### Introduction
+#### VPN Introduction
 
 The goal here is to have an OpenVPN Client container running and always connected. We'll make Deluge incoming and outgoing traffic go through this OpenVPN container.
 
@@ -315,16 +336,16 @@ This must come up with some safety features:
 The vpn container that we'll be using is the [PIA](https://privateinternetaccess.com) implementation of [gluetun](https://github.com/qdm12/gluetun).
 It will only require the account with the VPN provider of your choice. Check the [gluetun](https://github.com/qdm12/gluetun) github page for other VPN providers you can use. 
 
-#### Docker container
+#### VPN Docker container
 
 Put it in the docker-compose file, and make deluge use the vpn container network:
 
 ```yaml
 version: "3.4"
 services:
-  gluetun:
+  gluetun-torrents:
     image: qmcgaw/private-internet-access
-    container_name: gluetun
+    container_name: gluetun-torrents
     cap_add:
       - NET_ADMIN
     network_mode: bridge
@@ -334,20 +355,19 @@ services:
       - 8388:8388/udp # Shadowsocks
       - 8000:8000/tcp # Built-in HTTP control server
       - 8112:8112/tcp # Deluge GUI
-      - 9117:9117/tcp # Jackett GUI
     volumes:
-      - ${ROOT}/config/gluetun:/gluetun
+      - ${ROOT}/config/gluetun-torrents:/gluetun
     environment:
       # More variables are available, see the readme table
       - VPNSP=private internet access
       # Timezone for accurate logs times
-      - TZ=${VPNTZ} # timezone, defined in .env
+      - TZ=${VPNTZ_TORRENT} # timezone, defined in .env
       # All VPN providers
       - USER=${VPNUSER}
       # All VPN providers but Mullvad
       - PASSWORD=${VPNPASS}  
       # All VPN providers but Mullvad
-      - REGION=${VPNREGION} 
+      - REGION=${VPNREGION_TORRENT} 
       - HTTPPROXY=on
       - HTTPPROXY_LOG=on
     restart: unless-stopped
@@ -367,51 +387,90 @@ services:
 ```
 
 Notice how deluge is now using the vpn container network, with deluge web UI port exposed on the vpn container for local network access.
-We'll also be using the vpn container network for Jackett to poll the torrent tracking site. Jackett's UI can be reached at port 9117. This is why it has also been exposed in the gluetun service.
 
 You can check that deluge is properly going out through the VPN IP by using [torguard check](https://torguard.net/checkmytorrentipaddress.php).
 Get the torrent magnet link there, put it in Deluge, wait a bit, then you should see your outgoing torrent IP on the website.
 
 ![Torrent guard](img/torrent_guard.png)
 
-The http proxy is also enabled in the above config. This way the proxy feature of prowlarr can be used to proxy the calls being made to indexers through the gluetun vpn. 
+The http proxy is also enabled in the above config. This way the proxy feature of prowlarr can be used to proxy the calls being made to torrent sites through the gluetun vpn. 
 
-### Setup NZBGet
+### Setup SABnzbd
 
-#### Docker container
+#### Usenet Introduction
+
+Another option to download is through a usenet provider. If Usenets are completely new, there are [introduction guides](https://www.binaries4all.com/beginners/) that shed more light on the concept.
+Just like with torrents, the whole process will be automated through the Servarr tools.
+
+However, An account to a Usenet provider and a Usenet indexer are required.
+An example of a Usenet provider is [Eweka](https://www.eweka.nl/) and a possible indexer is [NZBgeek](https://nzbgeek.info/) but there are a lot of alternatives available.
+
+#### SABnzbd Docker container
 
 Once again we'll use the Docker image from linuxserver and set it in a docker-compose file.
+We'll also include an additional instance of the VPN container. It's possible to have both deluge and SABnzbd combined in the same VPN tunnel, but here the choice was made to keep them separated.
 
 ```yaml
-  nzbget:
-    container_name: nzbget
-    image: linuxserver/nzbget:latest
-    restart: unless-stopped
-    network_mode: host
+  gluetun-usenet:
+    image: qmcgaw/private-internet-access
+    container_name: gluetun-usenet
+    cap_add:
+      - NET_ADMIN
+    network_mode: bridge
+    ports:
+      - 7888:8888/tcp # HTTP proxy
+      - 7388:8388/tcp # Shadowsocks
+      - 7388:8388/udp # Shadowsocks
+      - 7000:8000/tcp # Built-in HTTP control server
+      - 7112:8080/tcp # SABnzb GUI
+    volumes:
+      - ${ROOT}/config/gluetun-usenet:/gluetun
     environment:
-      - PUID=${PUID} # default user id, defined in .env
-      - PGID=${PGID} # default group id, defined in .env
-      - TZ=${TZ} # timezone, defined in .env
-     volumes:
-      - ${ROOT}/downloads:/downloads # download folder
-      - ${ROOT}/config/nzbget:/config # config files
+      # More variables are available, see the readme table
+      - VPNSP=private internet access
+      # Timezone for accurate logs times
+      - TZ=${VPNTZ_USENET} # timezone, defined in .env
+      # All VPN providers
+      - USER=${VPNUSER}
+      # All VPN providers but Mullvad
+      - PASSWORD=${VPNPASS}  
+      # All VPN providers but Mullvad
+      - REGION=${VPNREGION_USENET} 
+      - HTTPPROXY=on
+      - HTTPPROXY_LOG=on
+    restart: unless-stopped
+
+  sabnzbd:
+    image: linuxserver/sabnzbd:latest
+    container_name: sabnzbd
+    network_mode: service:gluetun-usenet # run on the vpn network
+    environment:
+      - PUID=${PUID}          # default user id, defined in .env
+      - PGID=${PGID}          # default group id, defined in .env
+      - TZ=${VPNTZ_USENET}    # timezone, defined in .env
+    volumes:
+      - ${ROOT}/data/usenet:/data/usenet        # downloads folder
+      - ${ROOT}/config/sabnzbd:/config          # config files
+    restart: unless-stopped
 ```
 
-#### Configuration and usage
+#### SABnzbd Configuration
 
-After running the container, web UI should be available on `localhost:6789`.
-Username: nzbget
-Password: tegbzn6789
+After running the container, web UI should be available on `localhost:7112`. 
 
-![NZBGet](img/nzbget_empty.png)
+SABnzb has a protective feature that allows only whitelisted hostnames to be used to connect to the GUI and API.
+If the message `Access denied - Hostname verification failed: https://sabnzbd.org/hostname-check` appears, it means that the initial connection has to be made to the server ip as SABnzbd doesn't recognize the hostname yet.
+If a hostname will be assigned to SABnzbd, it can be whitelisted later. entered in the settings under `Special` ,  field (after the initial configuration wizard). This will whitelist the chosen hostname and allow a connection to be made.
 
-Since NZBGet stays on my local network, I choose to disable passwords (`Settings/Security/ControlPassword` set to empty).
+When connecting to SABnzbd for the first time, a Quick Start Wizard opens. Select the desired language and start the wizard. 
+The details of the usenet provider will be requested on the next screen (SSL is recommended if it is supported by the usenet provider)
+On the last screen of the wizard, change the `Completed Download Folder` to `/data/usenet/complete` and the `Temporary Download Folder` to `/data/usenet/incomplete`. 
 
-The important thing to configure is the url and credentials of your newsgroups server (`Settings/News-servers`). I have a Frugal Usenet account at the moment, I set it up with TLS encryption enabled.
+After completing the configuration wizard, go to the SABnzbd configuration page by clicking the ![Small Gear icon](img/sabnzbd_settings_icon.png).
+Under the `Special` category in the settings, there is a field called `host_whitelist`.
+That is the whitelist fo the hostnames. The value entered here should be comma seperated. At minimum we'll need to add the entry `media` to this field to allow the library management tools (sonarr, radarr, ...) access to the API.
 
-Default configuration suits me well, but don't hesitate to have a look at the `Paths` configuration.
-
-You can manually add .nzb files to download, but the goal is of course to have Sonarr and Radarr take care of it automatically.
+![SABnzbd hostname whitelist](img/sabnzbd_hostname_whitelist.png)
 
 ### Setup Plex
 
@@ -439,7 +498,7 @@ We'll use the host network directly, and run our container with the following co
 Let's run it !
 `docker-compose up -d`
 
-#### Configuration
+#### Plex Configuration
 
 Plex Web UI should be available at `localhost:32400/web` (replace `localhost` by your server ip if needed).
 
@@ -485,7 +544,7 @@ Personal choice: after using OpenPHT for a while I'll give Plex Media Player a t
 
 ### Setup Prowlarr
 
-#### Docker container
+#### Prowlarr Docker container
 
 We'll load the Prowlarr image from linuxserver too:
 
@@ -509,7 +568,7 @@ We'll load the Prowlarr image from linuxserver too:
 
 `docker-compose up -d`
 
-#### Configuration
+#### Prowlarr Configuration
 
 Prowlarr should be available on `localhost:9696`. Go straight to the `Download Clients` page under the `Settings` tab. Add the deluge client details as shown below.
 Make sure to fill in the right password if the deluge default password has been changed.
@@ -533,7 +592,7 @@ Proxy logging is on, so the gluetun logs should show connections to the differen
 
 ### Setup Sonarr
 
-#### Docker container
+#### Sonarr Docker container
 
 Guess who made a nice Sonarr Docker image? Linuxserver.io !
 
@@ -565,7 +624,7 @@ By mounting the whole directory, sonarr gets full control to use atomic (instant
 
 Check out the [planned paths](https://wiki.servarr.com/docker-guide#consistent-and-well-planned-paths) documentation on the [servarr wiki](https://wiki.servarr.com/) for a more detailed explanation.
 
-#### Configure Sonarr
+#### Sonarr Configuration
 
 Sonarr should be available on `localhost:8989`. Go straight to the `Settings` tab.
 
@@ -588,8 +647,10 @@ Offcourse, active API keys should be kept secret at all times. The ones in the s
 The `Download Clients` tab is where we'll configure links with our two download clients: NZBGet and Deluge.
 There are existing presets for these 2 that we'll fill with the proper configuration.
 
-NZBGet configuration:
-![Sonarr NZBGet configuration](img/sonarr_nzbget.png)
+SABnzbd configuration:
+To configure SABnzbd access in Sonarr, we'll require the api key from SABnzbd. That key is located under the `Settings` (the little gear at the top right) or `http://localhost:8080/sabnzbd/config/` ,  `General` , `API Key`.
+
+![Sonarr SABnzbd configuration](img/sonarr_sabnzbd.png)
 
 Deluge configuration:
 ![Sonarr Deluge configuration](img/sonarr_deluge.png)
@@ -602,11 +663,11 @@ In `Connect` tab, we'll configure Sonarr to send notifications to Plex when a ne
 The `Authenticate with Plex.tv` button will go to the plex.tv login page.
 Logging into a plex.tv account through this button will link the server and it's libraries to the account.
 
-#### Give it a try
+#### Give Sonarr a try
 
 Let's add a series !
 
-![Adding a serie](img/sonarr_add.png)
+![Adding a series](img/sonarr_add.png)
 
 _Note: You may need to `chown -R $USER:$USER /path/to/root/directory` so Sonarr and the rest of the apps have the proper permissions to modify and move around files. This Docker image of Sonarr uses an internal user account inside the container called `abc` some you may have to set this user as owner of the directory where it will place the media files after download. This note also applies for Radarr._
 
@@ -619,13 +680,11 @@ You can then either add the serie to the library (monitored episode research wil
 
 ![Season 1 in Sonarr](img/sonarr_season1.png)
 
-Wait a few seconds, then you should see that Sonarr started doing its job. Here it grabed files from my Usenet indexers and sent the download to NZBGet automatically.
-
-![Download in Progress in NZBGet](img/nzbget_download.png)
+Wait a few seconds, then you should see that Sonarr started doing its job. Check Deluge and SABnzbd to see the downloads starting
 
 You can also do a manual search for each episode, or trigger an automatic search.
 
-When download is over, you can head over to Plex and see that the episode appeared correctly, with all metadata and subtitles grabbed automatically. Applause !
+When download is over, head over to Plex and see that the episode appeared correctly, with all metadata and subtitles grabbed automatically.
 
 ![Episode landed in Plex](img/mindhunter_plex.png)
 
@@ -633,7 +692,7 @@ When download is over, you can head over to Plex and see that the episode appear
 
 Radarr is a fork of Sonarr, made for movies instead of TV shows. 
 
-#### Docker container
+#### Radarr Docker container
 
 Radarr is _very_ similar to Sonarr. You won't be surprised by this configuration.
 
@@ -656,13 +715,13 @@ Radarr is _very_ similar to Sonarr. You won't be surprised by this configuration
       - ${ROOT}/data:/data                # data folder
 ```
 
-#### Configuration
+#### Radarr Configuration
 
 Radarr Web UI is available on port 7878.
 
 The configuration of Radarr is a copy of the [Sonar configuration](#configuration-3).
 
-#### Give it a try
+#### Give Radarr a try
 
 Let's add a movie !
 
@@ -735,7 +794,7 @@ The language settings are located on the bottom of the screen.
 
 ![Bazarr Languages](img/bazarr_language.png)
 
-The following page is the Sonarr setup page. This part requiures the sonarr api key. This key has been retrieved before when connection prowlarr to sonarr.
+The following page is the Sonarr setup page. This part requires the sonarr api key. This key has been retrieved before when connection prowlarr to sonarr.
 
 ![Sonarr API Key](img/sonarr_api_key_location.png)
 
