@@ -136,7 +136,7 @@ You can also use a Raspberry Pi, a Synology NAS, a Windows or Mac computer. The 
 
 ## Software stack
 
-![Architecture Diagram](img/architecture_diagram.png)
+![Architecture Diagram](img/architecture_diagram.drawio.png)
 
 **Downloaders**:
 
