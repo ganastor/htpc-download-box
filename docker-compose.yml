@@ -1,8 +1,8 @@
 version: "3.4"
 services:
-  gluetun:
+  gluetun-torrents:
     image: qmcgaw/private-internet-access
-    container_name: gluetun
+    container_name: gluetun-torrents
     cap_add:
       - NET_ADMIN
     network_mode: bridge
@@ -13,34 +13,76 @@ services:
       - 8000:8000/tcp # Built-in HTTP control server
       - 8112:8112/tcp # Deluge GUI
     volumes:
-      - ${ROOT}/config/gluetun:/gluetun
+      - ${ROOT}/config/gluetun-torrents:/gluetun
     environment:
       # More variables are available, see the readme table
       - VPNSP=private internet access
       # Timezone for accurate logs times
-      - TZ=${VPNTZ} # timezone, defined in .env
+      - TZ=${VPNTZ_TORRENT} # timezone, defined in .env
       # All VPN providers
       - USER=${VPNUSER}
       # All VPN providers but Mullvad
       - PASSWORD=${VPNPASS}  
       # All VPN providers but Mullvad
-      - REGION=${VPNREGION} 
+      - REGION=${VPNREGION_TORRENT} 
       - HTTPPROXY=on
       - HTTPPROXY_LOG=on
     restart: unless-stopped
 
   deluge:
-    container_name: deluge
     image: linuxserver/deluge:latest
-    restart: unless-stopped
-    network_mode: service:gluetun # run on the vpn network
+    container_name: deluge
+    network_mode: service:gluetun-torrents # run on the vpn network
     environment:
-      - PUID=${PUID}  # default user id, defined in .env
-      - PGID=${PGID}  # default group id, defined in .env
-      - TZ=${VPNTZ}   # timezone, defined in .env
+      - PUID=${PUID}          # default user id, defined in .env
+      - PGID=${PGID}          # default group id, defined in .env
+      - TZ=${VPNTZ_TORRENT}   # timezone, defined in .env
     volumes:
       - ${ROOT}/data/torrents:/data/torrents    # downloads folder
       - ${ROOT}/config/deluge:/config           # config files
+    restart: unless-stopped
+    
+  gluetun-usenet:
+    image: qmcgaw/private-internet-access
+    container_name: gluetun-usenet
+    cap_add:
+      - NET_ADMIN
+    network_mode: bridge
+    ports:
+      - 7888:8888/tcp # HTTP proxy
+      - 7388:8388/tcp # Shadowsocks
+      - 7388:8388/udp # Shadowsocks
+      - 7000:8000/tcp # Built-in HTTP control server
+      - 7112:8080/tcp # SABnzb GUI
+    volumes:
+      - ${ROOT}/config/gluetun-usenet:/gluetun
+    environment:
+      # More variables are available, see the readme table
+      - VPNSP=private internet access
+      # Timezone for accurate logs times
+      - TZ=${VPNTZ_USENET} # timezone, defined in .env
+      # All VPN providers
+      - USER=${VPNUSER}
+      # All VPN providers but Mullvad
+      - PASSWORD=${VPNPASS}  
+      # All VPN providers but Mullvad
+      - REGION=${VPNREGION_USENET} 
+      - HTTPPROXY=on
+      - HTTPPROXY_LOG=on
+    restart: unless-stopped
+
+  sabnzbd:
+    image: linuxserver/sabnzbd:latest
+    container_name: sabnzbd
+    network_mode: service:gluetun-usenet # run on the vpn network
+    environment:
+      - PUID=${PUID}          # default user id, defined in .env
+      - PGID=${PGID}          # default group id, defined in .env
+      - TZ=${VPNTZ_USENET}    # timezone, defined in .env
+    volumes:
+      - ${ROOT}/data/usenet:/data/usenet        # downloads folder
+      - ${ROOT}/config/sabnzbd:/config          # config files
+    restart: unless-stopped
 
   sonarr:
     container_name: sonarr
