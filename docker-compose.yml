@@ -163,4 +163,18 @@ services:
       - ${ROOT}/data/media-library/movies:/movies       # movies folder
       - ${ROOT}/data/media-library/tv:/tv               # tv shows folder
       
-
+  organizr:
+    container_name: organizr
+    hostname: organizr
+    image: organizr/organizr:latest
+    restart: unless-stopped
+    extra_hosts:
+      - "media:${MC_IP}"
+    ports:
+      - 5555:80
+    volumes:
+      - ${ROOT}/config/organizr:/config
+    environment:
+      - PUID=${PUID}  # default user id, defined in .env
+      - PGID=${PGID}  # default group id, defined in .env
+      - TZ=${TZ}      # timezone, defined in .env

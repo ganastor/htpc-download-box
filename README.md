@@ -15,6 +15,7 @@ All automated.
     - [Search for releases automatically with Usenet and torrent indexers](#search-for-releases-automatically-with-usenet-and-torrent-indexers)
     - [Handle bittorrent and usenet downloads with Deluge and NZBGet](#handle-bittorrent-and-usenet-downloads-with-deluge-and-nzbget)
     - [Organize libraries and play videos with Plex](#organize-libraries-and-play-videos-with-plex)
+    - [Combine all the different GUI's in one with Organizr](#combine-all-the-different-guis-in-one-with-organizr)
   - [Hardware configuration](#hardware-configuration)
   - [Software stack](#software-stack)
   - [Installation guide](#installation-guide)
@@ -53,6 +54,9 @@ All automated.
     - [Setup Bazarr](#setup-bazarr)
       - [Bazarr Docker container](#bazarr-docker-container)
       - [Bazarr Configuration](#bazarr-configuration)
+    - [Setup Organizr](#setup-organizr)
+      - [Organizr Docker Container](#organizr-docker-container)
+      - [Organizr Configuration](#organizr-configuration)
   - [Manage it all from your mobile](#manage-it-all-from-your-mobile)
   - [Going Further](#going-further)
 
@@ -61,7 +65,6 @@ All automated.
 - Calibre integration for ebooks
 - Audiobookshelf integration as audiobook media player
 - Tailscale vpn for management of services outside the private network.
-- Add Organizr to combine all GUIs on 1 site.
 
 ## Overview
 
@@ -124,6 +127,15 @@ Plex keeps track of your position in the entire library: what episode of a given
 Plex comes with [clients](https://www.plex.tv/apps/) in a lot of different systems (Web UI, Linux, Windows, OSX, iOS, Android, Android TV, Chromecast, PS4, Smart TV, etc.) that allow you to display and watch all your shows/movies in a nice Netflix-like UI.
 
 The server has transcoding abilities: it automatically transcodes video quality if needed (eg. stream your 1080p movie in 480p if watched from a mobile with low bandwidth).
+
+### Combine all the different GUI's in one with Organizr
+
+[Organizr](https://github.com/causefx/Organizr) allows for (amongst other things) the merging of different GUIs and services.
+
+This guide will only show how the different service GUIs can be combined as different tabs on a single page for easy management.
+Organizr can do a lot more, but that will be out of scope for this guide. More info is available on the project's [wiki](https://docs.organizr.app/).
+
+![Organizer with added tabs](img/organizr_tab_editor_full.png)
 
 ## Hardware configuration
 
@@ -472,6 +484,9 @@ That is the whitelist fo the hostnames. The value entered here should be comma s
 
 ![SABnzbd hostname whitelist](img/sabnzbd_hostname_whitelist.png)
 
+A second configuration change is required to allow SABnzbd to be loaded as an iframe in Organizr.
+Under `Special` , make sure to uncheck the `x_frame_options` setting to allow this.
+
 ### Setup Plex
 
 #### Media Server Docker Container
@@ -809,6 +824,72 @@ Once that's done Bazarr will require a restart after which Bazarr should automat
 
 Additional information can be found on the [Bazarr wiki page](https://github.com/morpheus65535/bazarr/wiki/First-time-installation-configuration).
 
+### Setup Organizr
+
+All the above services come with their own GUI and webapp. Organizr can be used to combine all of these into a single page and make management easier.
+It is also more convenient to enable outside access to 1 combined service instead of opening them all up.
+
+*_NOTE_* : 
+Exposing these GUIs directly to the internet is highly discouraged. It greatly increases the networks attack surface.
+If access from outside the local network is required, it's highly encouraged to use a point-to-point VPN solution.
+An implementation of Tailscape is on the ToDo list to allow for secure management of the different GUIs.
+
+If direct access from the internet (without VPN, so very much discouraged) is a hard requirement, make sure to implement all the available security methods. 
+Use a strong username and password and enable multi-factor authentication.
+
+#### Organizr Docker Container
+
+The docker image used for Organizr is the official release.
+
+
+```yaml      
+  organizr:
+    container_name: organizr
+    hostname: organizr
+    image: organizr/organizr:latest
+    restart: unless-stopped
+    extra_hosts:
+      - "media:${MC_IP}"
+    ports:
+      - 5555:80
+    volumes:
+      - ${ROOT}/config/organizr:/config
+    environment:
+      - PUID=${PUID}  # default user id, defined in .env
+      - PGID=${PGID}  # default group id, defined in .env
+      - TZ=${TZ}      # timezone, defined in .env
+```
+
+#### Organizr Configuration
+
+The configuration as provided here will expose the Organizr GUI on port 5555.
+
+When loading Organizr for the first time, a setup wizard will start. Most of the information that needs to be provided is self-explanatory.
+
+The recommended setting for `Install type` is `personal`.
+In `Admin Info` and `Security` , A set of credentials is requested.
+
+Under database it would be recommended to select `sqlite3` as the database driver and the suggested dir as the location of the database.
+Verify of the database path can be done by clicking the `Test / Create Path` button.
+A mysql database can be used but is for more advanced users.
+
+At the end of the wizard, the main settings page will load.
+To add new tabs go to the `Tab editor` and click the `+` - sign to add a new tab.
+
+![Organizr with empty tab editor](img/organizr_tab_editor_empty.png)
+
+A new tab can be addded for each service through the `Add New Tab` window. 
+The url will be required. `media` can be used as the hostname with the correct port for each specific service.
+In `Choose Image` , a matching icon can be chosen. If everything is correctly configured , a green bar will be shown with the notificaton `Tab can be set as iFrame`.
+
+![Correct Sonarr tab configuration](img/organizr_add_tab.png)
+
+The tabs that need to be available in the sidebar will need their `Active` toggle set to green.
+The different services will be available on the left side after a reload of the page.
+
+![Organizr with services added](img/organizr_tab_editor_full.png)
+
+
 ## Manage it all from your mobile
 
 On Android, [nzb360](http://nzb360.com) is available to manage NZBGet, Deluge, Sonarr and Radarr.
@@ -819,8 +900,6 @@ On Android, [nzb360](http://nzb360.com) is available to manage NZBGet, Deluge, S
 
 Some stuff worth looking at to expand the setup:
 
-- [NZBHydra](https://github.com/theotherp/nzbhydra): meta search for NZB indexers (like [Jackett](https://github.com/Jackett/Jackett) does for torrents). Could simplify and centralise nzb indexers configuration at a single place.
-- [Organizr](https://github.com/causefx/Organizr): Embed all these services in a single webpage with tab-based navigation
 - [Plex sharing features](https://www.plex.tv/features/#feat-modal)
 - [Mylar](https://github.com/evilhero/mylar): like Sonarr, but for comic books.
 - [Ombi](http://www.ombi.io/): Web UI to give your shared Plex instance users the ability to request new content
