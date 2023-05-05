@@ -13,7 +13,7 @@ All automated.
   - [Overview](#overview)
     - [Monitor TV shows/movies with Sonarr and Radarr](#monitor-tv-showsmovies-with-sonarr-and-radarr)
     - [Search for releases automatically with Usenet and torrent indexers](#search-for-releases-automatically-with-usenet-and-torrent-indexers)
-    - [Handle bittorrent and usenet downloads with Deluge and NZBGet](#handle-bittorrent-and-usenet-downloads-with-deluge-and-nzbget)
+    - [Handle bittorrent and usenet downloads with Deluge and SABnzbd](#handle-bittorrent-and-usenet-downloads-with-deluge-and-sabnzbd)
     - [Organize libraries and play videos with Plex](#organize-libraries-and-play-videos-with-plex)
     - [Combine all the different GUI's in one with Organizr](#combine-all-the-different-guis-in-one-with-organizr)
   - [Hardware configuration](#hardware-configuration)
@@ -21,7 +21,7 @@ All automated.
   - [Installation guide](#installation-guide)
     - [Introduction](#introduction)
     - [Install docker](#install-docker)
-    - [Premade docker-compose](#optional-use-premade-docker-compose)
+    - [Prepared docker-compose](#optional-use-prepared-docker-compose)
     - [Setup environment variables](#setup-environment-variables)
     - [Create host directory structure](#create-host-directory-structure)
     - [Setup Deluge](#setup-deluge)
@@ -71,13 +71,13 @@ All automated.
 _Disclaimer: I'm not encouraging/supporting piracy, this is for information purpose only._
 
 How does it work? This is a Proof of Concept setup of several tools integrated together. They're all open-source and deployed as Docker containers.
-It is an interesting way to learn about multiple services, each running in their own container interacting with eachother.
+It is an interesting way to learn about multiple services, each running in their own container interacting with each other.
 
 The common workflow is detailed in this first section to give you an idea of how things work.
 
 ### Monitor TV shows/movies with Sonarr and Radarr
 
-Using [Sonarr](https://sonarr.tv/) Web UI, search for a TV show by name and mark it as monitored. You can specify a language and the required quality (1080p for instance). Sonarr will automatically take care of analyzing existing episodes and seasons of this TV show. It compares what you have on disk with the TV show release schedule, and triggers download for missing episodes. It also takes care of upgrading your existing episodes if a better quality matching your criterias is available out there.
+Using [Sonarr](https://sonarr.tv/) Web UI, search for a TV show by name and mark it as monitored. You can specify a language and the required quality (1080p for instance). Sonarr will automatically take care of analysing existing episodes and seasons of this TV show. It compares what you have on disk with the TV show release schedule, and triggers download for missing episodes. It also takes care of upgrading your existing episodes if a better quality matching your criteria's is available out there.
 
 ![Monitor Mr Robot season 1](img/mr_robot_season1.png)
 Sonarr triggers download batches for entire seasons. But it also handle upcoming episodes and seasons on-the-fly. No human intervention is required for all the episodes to be released from now on.
@@ -102,7 +102,7 @@ However this common protocol does not really exist for torrent indexers. That's 
 
 The best release matching your criteria is selected by Sonarr/Radarr (eg. non-blacklisted 1080p release with enough seeds). Then the download is passed on to another set of tools.
 
-### Handle bittorrent and usenet downloads with Deluge and NZBGet
+### Handle bittorrent and usenet downloads with Deluge and SABnzbd
 
 Sonarr and Radarr are plugged to downloaders for our 2 different systems:
 
@@ -144,7 +144,7 @@ The amount of cores and RAM are at this level to enable (some) transcoding by th
 
 It has Almalinux 8.6 with Docker installed.
 
-You can also use a Raspberry Pi, a Synology NAS, a Windows or Mac computer. The stack should work fine on all these systems, but you'll have to adapt the Docker stack below to your OS. I'll only focus on a standard Linux installation here, more specificly a RHEL based distro. This is just personal preference.
+You can also use a Raspberry Pi, a Synology NAS, a Windows or Mac computer. The stack should work fine on all these systems, but you'll have to adapt the Docker stack below to your OS. I'll only focus on a standard Linux installation here, more specifically a RHEL based distro. This is just personal preference.
 
 ## Software stack
 
@@ -196,7 +196,7 @@ Then add yourself to the `docker` group:
 Make sure it works fine:
 `docker run hello-world`
 
-### (optional) Use premade docker-compose
+### (optional) Use prepared docker-compose
 
 This tutorial will guide you along the full process of making your own docker-compose file and configuring every app within it, however, to prevent errors or to reduce typing, the general-purpose docker-compose file provided in this repository can be used.
 
@@ -211,7 +211,7 @@ For each of these containers, there is some unique configuration that needs to b
 Here is an example of what your `.env` file should look like, use values that fit for your setup.
 
 ```sh
-# Your timezone, https://en.wikipedia.org/wiki/List_of_tz_database_time_zones
+# Your time zone, https://en.wikipedia.org/wiki/List_of_tz_database_time_zones
 VPNTZ_TORRENT=Europe/Berlin
 VPNTZ_USENET=Europe/Berlin
 TZ=Europe/Paris
@@ -220,7 +220,7 @@ PUID=1000
 PGID=1000
 # The directory where data and configuration will be stored.
 ROOT=/media
-# Mediacenter IP (replace with the actual ip of the mediacenter. 
+# Media center IP (replace with the actual ip of the media center. 
 # This is required for the connection to the services hidden behind the vpn servers.
 MC_IP=192.168.0.123
 # Gluetun VPN variables (private internet access only)
@@ -292,7 +292,7 @@ services:
     environment:
       - PUID=${PUID}  # default user id, defined in .env
       - PGID=${PGID}  # default group id, defined in .env
-      - TZ=${VPNTZ}   # timezone, defined in .env
+      - TZ=${VPNTZ}   # time zone, defined in .env
     volumes:
       - ${ROOT}/data/torrents:/data/torrents    # downloads folder
       - ${ROOT}/config/deluge:/config           # config files
@@ -317,8 +317,7 @@ The running deluge daemon should be automatically detected and appear as online,
 
 ![Deluge daemon](img/deluge_daemon.png)
 
-You may want to change the download directory. I like to have to distinct directories for incomplete (ongoing) downloads, and complete (finished) ones.
-Also, I set up a blackhole directory: every torrent file in there will be downloaded automatically. This is useful for Jackett manual searches.
+The directory setup needs to be matched to the previously created directory structure on the host file system.
 
 You should activate `autoadd` in the plugins section: it adds supports for `.magnet` files.
 
@@ -372,8 +371,8 @@ services:
     environment:
       # More variables are available, see the readme table
       - VPNSP=private internet access
-      # Timezone for accurate logs times
-      - TZ=${VPNTZ_TORRENT} # timezone, defined in .env
+      # Time zone for accurate logs times
+      - TZ=${VPNTZ_TORRENT} # time zone, defined in .env
       # All VPN providers
       - USER=${VPNUSER}
       # All VPN providers but Mullvad
@@ -392,7 +391,7 @@ services:
     environment:
       - PUID=${PUID}  # default user id, defined in .env
       - PGID=${PGID}  # default group id, defined in .env
-      - TZ=${VPNTZ}   # timezone, defined in .env
+      - TZ=${VPNTZ}   # time zone, defined in .env
     volumes:
       - ${ROOT}/data/torrents:/data/torrents    # downloads folder
       - ${ROOT}/config/deluge:/config           # config files
@@ -411,7 +410,7 @@ The http proxy is also enabled in the above config. This way the proxy feature o
 
 #### Usenet Introduction
 
-Another option to download is through a usenet provider. If Usenets are completely new, there are [introduction guides](https://www.binaries4all.com/beginners/) that shed more light on the concept.
+Another option to download is through a usenet provider. If Usenet is completely new, there are [introduction guides](https://www.binaries4all.com/beginners/) that shed more light on the concept.
 Just like with torrents, the whole process will be automated through the Servarr tools.
 
 However, An account to a Usenet provider and a Usenet indexer are required.
@@ -440,8 +439,8 @@ We'll also include an additional instance of the VPN container. It's possible to
     environment:
       # More variables are available, see the readme table
       - VPNSP=private internet access
-      # Timezone for accurate logs times
-      - TZ=${VPNTZ_USENET} # timezone, defined in .env
+      # Time zone for accurate logs times
+      - TZ=${VPNTZ_USENET} # time zone, defined in .env
       # All VPN providers
       - USER=${VPNUSER}
       # All VPN providers but Mullvad
@@ -459,7 +458,7 @@ We'll also include an additional instance of the VPN container. It's possible to
     environment:
       - PUID=${PUID}          # default user id, defined in .env
       - PGID=${PGID}          # default group id, defined in .env
-      - TZ=${VPNTZ_USENET}    # timezone, defined in .env
+      - TZ=${VPNTZ_USENET}    # time zone, defined in .env
     volumes:
       - ${ROOT}/data/usenet:/data/usenet        # downloads folder
       - ${ROOT}/config/sabnzbd:/config          # config files
@@ -480,7 +479,7 @@ On the last screen of the wizard, change the `Completed Download Folder` to `/da
 
 After completing the configuration wizard, go to the SABnzbd configuration page by clicking the ![Small Gear icon](img/sabnzbd_settings_icon.png).
 Under the `Special` category in the settings, there is a field called `host_whitelist`.
-That is the whitelist fo the hostnames. The value entered here should be comma seperated. At minimum we'll need to add the entry `media` to this field to allow the library management tools (sonarr, radarr, ...) access to the API.
+That is the whitelist fo the hostnames. The value entered here should be comma separated. At minimum we'll need to add the entry `media` to this field to allow the library management tools (sonarr, radarr, ...) access to the API.
 
 ![SABnzbd hostname whitelist](img/sabnzbd_hostname_whitelist.png)
 
@@ -501,7 +500,7 @@ We'll use the host network directly, and run our container with the following co
     image: plexinc/pms-docker:latest
     restart: unless-stopped
     environment:
-      - TZ=${TZ}      # timezone, defined in .env
+      - TZ=${TZ}      # time zone, defined in .env
     ports:
       - 32400:32400/tcp # GUI
     volumes:
@@ -515,47 +514,35 @@ Let's run it !
 
 #### Plex Configuration
 
-Plex Web UI should be available at `localhost:32400/web` (replace `localhost` by your server ip if needed).
+Plex Web UI should be available at `localhost:32400/web` (replace `localhost` by the server ip if needed).
 
-Note: If you are running on a headless server (e.g. Synology NAS) with container using host networking, you will need to use ssh tunneling to gain access and setup the server for first run. (see https://forums.plex.tv/t/i-did-something-stupid-please-plex-forums-your-my-only-hope/328481/11)
+A plex login will be required (registration is free), then Plex will ask to add libraries.
 
-You'll have to login first (registration is free), then Plex will ask you to add your libraries.
-I have two libraries:
-
+For example:
 - Movies
 - TV shows
 
-Make these the library paths:
-
+Link the libraries to the below paths:
 - Movies: `/data/media-library/movies`
 - TV: `/data/media-library/tv`
 
-As you'll see later, these library directories will each have files automatically placed into them with Radarr (movies) and Sonarr (tv), respectively.
+As explained later, these library directories will each have files automatically placed into them with Radarr (movies) and Sonarr (tv), respectively.
+Plex will then scan the library and gather extra content; it may take some time according to how large the directory is.
 
-Now, Plex will then scan your files and gather extra content; it may take some time according to how large your directory is.
+A little recommendation to configure in the settings:
+- Enable "Update my library automatically"
 
-A few recommendations to configure in the settings:
-
-- Set time format to 24 hours (never understood why some people like 12 hours)
-- Tick "Update my library automatically"
-
-You can already watch your stuff through the Web UI. Note that it's also available from an authentified public URL proxified by Plex servers (see `Settings/Server/Remote Access`), you may note the URL or choose to disable public forwarding.
+The contents of the library can be through the Web UI. Note that it's also available from an authenticated public URL proxied by Plex servers (see `Settings/Server/Remote Access`), it's possible to connect directly with this URL or choose to disable public forwarding entirely.
 
 #### Setup Plex clients
 
-Plex clients are available for most devices. Nothing particular to configure, just download the app, log into it, enter the validation code and there you go.
-
-On a Linux Desktop, there are several alternatives.
-Historically, Plex Home Theater, based on XBMC/Kodi was the principal media player, and by far the client with the most features. It's quite comparable to XBMC/Kodi, but fully integrates with Plex ecosystem. Meaning it remembers what you're currently watching so that you can pause your movie in the bedroom while you continue watching it in the toilets \o/.
-Recently, Plex team decided to move towards a completely rewritten player called Plex Media Player. It's not officially available for Linux yet, but can be [built from sources](https://github.com/plexinc/plex-media-player). A user on the forums made [an AppImage for it](https://forums.plex.tv/discussion/278570/plex-media-player-packages-for-linux). Just download and run, it's plug and play. It has a very shiny UI, but lacks some features of PHT. For example: editing subtitles offset.
+Plex clients are available for most devices. Nothing particular to configure, download the app, log in and enter the validation code.
 
 ![Plex Media Player](img/plex_media_player.jpg)
 
-If it does not suit you, there is also now an official [Kodi add-on for Plex](https://www.plex.tv/apps/computer/kodi/). [Download Kodi](http://kodi.wiki/view/HOW-TO:Install_Kodi_for_Linux), then browse add-ons to find Plex.
+If an alternative is preferred , there is also now an official [Kodi add-on for Plex](https://www.plex.tv/apps/computer/kodi/). [Download Kodi](http://kodi.wiki/view/HOW-TO:Install_Kodi_for_Linux), then browse add-ons to find Plex.
 
-Also the old good Plex Home Theater is still available, in an open source version called [OpenPHT](https://github.com/RasPlex/OpenPHT).
-
-Personal choice: after using OpenPHT for a while I'll give Plex Media Player a try. I might miss the ability to live-edit subtitle offset, but Bazarr is supposed to do its job. We'll see.
+Also Plex Home Theatre is still available, in an open source version called [OpenPHT](https://github.com/RasPlex/OpenPHT).
 
 ### Setup Prowlarr
 
@@ -575,7 +562,7 @@ We'll load the Prowlarr image from linuxserver too:
     environment:
       - PUID=${PUID}  # default user id, defined in .env
       - PGID=${PGID}  # default group id, defined in .env
-      - TZ=${TZ}      # timezone, defined in .env
+      - TZ=${TZ}      # time zone, defined in .env
     volumes:
       - /etc/localtime:/etc/localtime:ro
       - ${ROOT}/config/prowlarr:/config     # config files
@@ -625,7 +612,7 @@ Let's go:
     environment:
       - PUID=${PUID}  # default user id, defined in .env
       - PGID=${PGID}  # default group id, defined in .env
-      - TZ=${TZ}      # timezone, defined in .env
+      - TZ=${TZ}      # time zone, defined in .env
     volumes:
       - /etc/localtime:/etc/localtime:ro
       - ${ROOT}/config/sonarr:/config     # config files
@@ -634,7 +621,7 @@ Let's go:
 
 `docker-compose up -d`
 
-Sonarr web UI listens on port 8989 by default. The full data directoryn needs to be mounted in the container. Both the directory where the downloaders will drop the complete files and the end location where the media player will find the processed content.
+Sonarr web UI listens on port 8989 by default. The full data directory needs to be mounted in the container. Both the directory where the downloaders will drop the complete files and the end location where the media player will find the processed content.
 By mounting the whole directory, sonarr gets full control to use atomic (instant) moves between folders as well as hard link functionality to avoid data duplication. (Especially handy on setups with limited storage.)
 
 Check out the [planned paths](https://wiki.servarr.com/docker-guide#consistent-and-well-planned-paths) documentation on the [servarr wiki](https://wiki.servarr.com/) for a more detailed explanation.
@@ -655,7 +642,7 @@ For this we will have to add Sonarr to the Prowlarr setup.
 In the Prowlarr GUI, Add the sonarr application under `Settings` , `Applications`.
 Make sure that "Full Sync" is selected and the correct API key for your sonarr setup.
 You can find the api key in the Sonarr GUI under `Settings` , `General`.
-Offcourse, active API keys should be kept secret at all times. The ones in the screenshots were for testing purposes and the setup is no longer active.
+Of course, active API keys should be kept secret at all times. The ones in the screenshots were for testing purposes and the setup is no longer active.
 
 ![Add Sonarr to PRowlarr](img/prowlarr_add_sonarr.png)
 
@@ -691,7 +678,7 @@ Enter the series name, then you can choose a few things:
 - Monitor: what episodes do you want to mark as monitored? All future episodes, all episodes from all seasons, only latest seasons, nothing? Monitored episodes are the episodes Sonarr will download automatically.
 - Profile: quality profile of the episodes you want.
 
-You can then either add the serie to the library (monitored episode research will start asynchronously), or add and force the search.
+You can then either add the series to the library (monitored episode research will start asynchronously), or add and force the search.
 
 ![Season 1 in Sonarr](img/sonarr_season1.png)
 
@@ -723,7 +710,7 @@ Radarr is _very_ similar to Sonarr. You won't be surprised by this configuration
     environment:
       - PUID=${PUID}  # default user id, defined in .env
       - PGID=${PGID}  # default group id, defined in .env
-      - TZ=${TZ}      # timezone, defined in .env
+      - TZ=${TZ}      # time zone, defined in .env
     volumes:
       - /etc/localtime:/etc/localtime:ro
       - ${ROOT}/config/radarr:/config     # config files
@@ -746,7 +733,7 @@ Enter the movie name, choose the quality you want, and there you go.
 
 You can then either add the movie to the library (monitored movie research will start asynchronously), or add and force the search.
 
-Wait a few seconds, then you should see that Radarr started doing its job. Here it grabed files from the Usenet indexers and sent the download to NZBGet automatically.
+Wait a few seconds, then you should see that Radarr started doing its job. Here it grabbed files from the Usenet indexers and sent the download to NZBGet automatically.
 
 You can also do a manual search for each movie, or trigger an automatic search.
 
@@ -786,7 +773,7 @@ Believe it or not, we will be using yet another docker container from linuxserve
     environment:
       - PUID=${PUID}  # default user id, defined in .env
       - PGID=${PGID}  # default group id, defined in .env
-      - TZ=${TZ}      # timezone, defined in .env
+      - TZ=${TZ}      # time zone, defined in .env
       - UMASK_SET=022 # optional
     volumes:
       - ${ROOT}/config/bazarr:/config                   # config files
@@ -832,7 +819,7 @@ It is also more convenient to enable outside access to 1 combined service instea
 *_NOTE_* : 
 Exposing these GUIs directly to the internet is highly discouraged. It greatly increases the networks attack surface.
 If access from outside the local network is required, it's highly encouraged to use a point-to-point VPN solution.
-An implementation of Tailscape is on the ToDo list to allow for secure management of the different GUIs.
+An implementation of Tailscale is on the ToDo list to allow for secure management of the different GUIs.
 
 If direct access from the internet (without VPN, so very much discouraged) is a hard requirement, make sure to implement all the available security methods. 
 Use a strong username and password and enable multi-factor authentication.
@@ -857,7 +844,7 @@ The docker image used for Organizr is the official release.
     environment:
       - PUID=${PUID}  # default user id, defined in .env
       - PGID=${PGID}  # default group id, defined in .env
-      - TZ=${TZ}      # timezone, defined in .env
+      - TZ=${TZ}      # time zone, defined in .env
 ```
 
 #### Organizr Configuration
@@ -878,9 +865,9 @@ To add new tabs go to the `Tab editor` and click the `+` - sign to add a new tab
 
 ![Organizr with empty tab editor](img/organizr_tab_editor_empty.png)
 
-A new tab can be addded for each service through the `Add New Tab` window. 
+A new tab can be added for each service through the `Add New Tab` window. 
 The url will be required. `media` can be used as the hostname with the correct port for each specific service.
-In `Choose Image` , a matching icon can be chosen. If everything is correctly configured , a green bar will be shown with the notificaton `Tab can be set as iFrame`.
+In `Choose Image` , a matching icon can be chosen. If everything is correctly configured , a green bar will be shown with the notification `Tab can be set as iFrame`.
 
 ![Correct Sonarr tab configuration](img/organizr_add_tab.png)
 

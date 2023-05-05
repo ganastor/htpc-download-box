@@ -17,8 +17,8 @@ services:
     environment:
       # More variables are available, see the readme table
       - VPNSP=private internet access
-      # Timezone for accurate logs times
-      - TZ=${VPNTZ_TORRENT} # timezone, defined in .env
+      # Time zone for accurate logs times
+      - TZ=${VPNTZ_TORRENT} # time zone, defined in .env
       # All VPN providers
       - USER=${VPNUSER}
       # All VPN providers but Mullvad
@@ -36,7 +36,7 @@ services:
     environment:
       - PUID=${PUID}          # default user id, defined in .env
       - PGID=${PGID}          # default group id, defined in .env
-      - TZ=${VPNTZ_TORRENT}   # timezone, defined in .env
+      - TZ=${VPNTZ_TORRENT}   # time zone, defined in .env
     volumes:
       - ${ROOT}/data/torrents:/data/torrents    # downloads folder
       - ${ROOT}/config/deluge:/config           # config files
@@ -59,8 +59,8 @@ services:
     environment:
       # More variables are available, see the readme table
       - VPNSP=private internet access
-      # Timezone for accurate logs times
-      - TZ=${VPNTZ_USENET} # timezone, defined in .env
+      # Time zone for accurate logs times
+      - TZ=${VPNTZ_USENET} # time zone, defined in .env
       # All VPN providers
       - USER=${VPNUSER}
       # All VPN providers but Mullvad
@@ -78,7 +78,7 @@ services:
     environment:
       - PUID=${PUID}          # default user id, defined in .env
       - PGID=${PGID}          # default group id, defined in .env
-      - TZ=${VPNTZ_USENET}    # timezone, defined in .env
+      - TZ=${VPNTZ_USENET}    # time zone, defined in .env
     volumes:
       - ${ROOT}/data/usenet:/data/usenet        # downloads folder
       - ${ROOT}/config/sabnzbd:/config          # config files
@@ -95,7 +95,7 @@ services:
     environment:
       - PUID=${PUID}  # default user id, defined in .env
       - PGID=${PGID}  # default group id, defined in .env
-      - TZ=${TZ}      # timezone, defined in .env
+      - TZ=${TZ}      # time zone, defined in .env
     volumes:
       - /etc/localtime:/etc/localtime:ro
       - ${ROOT}/config/sonarr:/config     # config files
@@ -112,7 +112,7 @@ services:
     environment:
       - PUID=${PUID}  # default user id, defined in .env
       - PGID=${PGID}  # default group id, defined in .env
-      - TZ=${TZ}      # timezone, defined in .env
+      - TZ=${TZ}      # time zone, defined in .env
     volumes:
       - /etc/localtime:/etc/localtime:ro
       - ${ROOT}/config/radarr:/config     # config files
@@ -129,7 +129,7 @@ services:
     environment:
       - PUID=${PUID}  # default user id, defined in .env
       - PGID=${PGID}  # default group id, defined in .env
-      - TZ=${TZ}      # timezone, defined in .env
+      - TZ=${TZ}      # time zone, defined in .env
     volumes:
       - /etc/localtime:/etc/localtime:ro
       - ${ROOT}/config/prowlarr:/config     # config files
@@ -156,7 +156,7 @@ services:
     environment:
       - PUID=${PUID}  # default user id, defined in .env
       - PGID=${PGID}  # default group id, defined in .env
-      - TZ=${TZ}      # timezone, defined in .env
+      - TZ=${TZ}      # time zone, defined in .env
       - UMASK_SET=022 # optional
     volumes:
       - ${ROOT}/config/bazarr:/config                   # config files
@@ -177,4 +177,4 @@ services:
     environment:
       - PUID=${PUID}  # default user id, defined in .env
       - PGID=${PGID}  # default group id, defined in .env
-      - TZ=${TZ}      # timezone, defined in .env
+      - TZ=${TZ}      # time zone, defined in .env
