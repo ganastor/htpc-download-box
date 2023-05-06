@@ -11,10 +11,11 @@ All automated.
   - [Table of Contents](#table-of-contents)
   - [ToDo](#todo)
   - [Overview](#overview)
-    - [Monitor TV shows/movies with Sonarr and Radarr](#monitor-tv-showsmovies-with-sonarr-and-radarr)
+    - [Monitor TV shows/movies and ebooks/audiobooks with Sonarr, Radarr and Readarr](#monitor-tv-showsmovies-and-ebooksaudiobooks-with-sonarr-radarr-and-readarr)
     - [Search for releases automatically with Usenet and torrent indexers](#search-for-releases-automatically-with-usenet-and-torrent-indexers)
     - [Handle bittorrent and usenet downloads with Deluge and SABnzbd](#handle-bittorrent-and-usenet-downloads-with-deluge-and-sabnzbd)
     - [Organize libraries and play videos with Plex](#organize-libraries-and-play-videos-with-plex)
+    - [Organizing book libraries and syncing with ebook readers through Calibre and Calibre-web](#organizing-book-libraries-and-syncing-with-ebook-readers-through-calibre-and-calibre-web)
     - [Combine all the different GUI's in one with Organizr](#combine-all-the-different-guis-in-one-with-organizr)
   - [Hardware configuration](#hardware-configuration)
   - [Software stack](#software-stack)
@@ -50,10 +51,16 @@ All automated.
       - [Radarr Docker container](#radarr-docker-container)
       - [Radarr Configuration](#radarr-configuration)
       - [Give Radarr a try](#give-radarr-a-try)
-      - [Movie discovering](#movie-discovering)
     - [Setup Bazarr](#setup-bazarr)
       - [Bazarr Docker container](#bazarr-docker-container)
       - [Bazarr Configuration](#bazarr-configuration)
+    - [Setup Calibre](#setup-calibre)
+      - [Calibre Docker container](#calibre-docker-container)
+      - [Calibre Configuration](#calibre-configuration)
+      - [Calibre-web Configuration](#calibre-web-configuration)
+    - [Setup ebooks Readarr](#setup-ebooks-readarr)
+      - [Ebooks Readarr Docker container](#ebooks-readarr-docker-container)
+      - [Ebooks Readarr configuration](#ebooks-readarr-configuration)
     - [Setup Organizr](#setup-organizr)
       - [Organizr Docker Container](#organizr-docker-container)
       - [Organizr Configuration](#organizr-configuration)
@@ -62,7 +69,6 @@ All automated.
 
 ## ToDo
 
-- Calibre integration for ebooks
 - Audiobookshelf integration as audiobook media player
 - Tailscale vpn for management of services outside the private network.
 
@@ -75,9 +81,9 @@ It is an interesting way to learn about multiple services, each running in their
 
 The common workflow is detailed in this first section to give you an idea of how things work.
 
-### Monitor TV shows/movies with Sonarr and Radarr
+### Monitor TV shows/movies and ebooks/audiobooks with Sonarr, Radarr and Readarr
 
-Using [Sonarr](https://sonarr.tv/) Web UI, search for a TV show by name and mark it as monitored. You can specify a language and the required quality (1080p for instance). Sonarr will automatically take care of analysing existing episodes and seasons of this TV show. It compares what you have on disk with the TV show release schedule, and triggers download for missing episodes. It also takes care of upgrading your existing episodes if a better quality matching your criteria's is available out there.
+Using [Sonarr](https://sonarr.tv/) Web UI, TV show's can be searched by name and marked as monitored. It's possible to specify a language and the required quality (1080p for instance). Sonarr will automatically take care of analysing existing episodes and seasons of this TV show. It compares what is present on disk with the TV show release schedule, and triggers downloads for missing episodes. It also takes care of upgrading existing episodes if a better quality matching given criteria's is available out there.
 
 ![Monitor Mr Robot season 1](img/mr_robot_season1.png)
 Sonarr triggers download batches for entire seasons. But it also handle upcoming episodes and seasons on-the-fly. No human intervention is required for all the episodes to be released from now on.
@@ -88,23 +94,25 @@ When the download is over, Sonarr moves the file to the appropriate location (`m
 
 [Radarr](https://radarr.video) is the exact same thing, but for movies.
 
+[Readarr](https://readarr.com/) is the offshoot application that handles ebooks and audiobooks.
+
 ### Search for releases automatically with Usenet and torrent indexers
 
-Sonarr and Radarr can both rely on two different ways to download files:
+Sonarr, Radarr and Readarr can rely on two different ways to download files:
 
 - Usenet (newsgroups) bin files. That's the historical and principal option, for several reasons: consistency and quality of the releases, download speed, indexers organization, etc. Often requires a paid subscription to newsgroup servers.
 - Torrents. That's the new player in town, for which support has improved a lot lately.
 
 Files are searched automatically by Sonarr/Radarr through a list of _indexers_ that you have to configure. Indexers are APIs that allow searching for particular releases organized by categories. Think browsing the Pirate Bay programmatically. This is a pretty common feature for newsgroups indexers that respect a common API (called `Newznab`).
-However this common protocol does not really exist for torrent indexers. That's why a tool called [Prowlarr](https://wiki.servarr.com/prowlarr) is used. You can consider it as a local proxy API for the most popular torrent indexers. It searches and parses information from heterogeneous websites.
+However this common protocol does not really exist for torrent indexers. That's why a tool called [Prowlarr](https://wiki.servarr.com/prowlarr) is used. It can be considered as a local proxy API for the most popular torrent indexers. It searches and parses information from heterogeneous websites.
 
 ![Prowlarr indexers](img/prowlarr_indexers.png)
 
-The best release matching your criteria is selected by Sonarr/Radarr (eg. non-blacklisted 1080p release with enough seeds). Then the download is passed on to another set of tools.
+The best release matching preset criteria is selected by Sonarr/Radarr (eg. non-blacklisted 1080p release with enough seeds). Then the download is passed on to another set of tools.
 
 ### Handle bittorrent and usenet downloads with Deluge and SABnzbd
 
-Sonarr and Radarr are plugged to downloaders for our 2 different systems:
+Sonarr, Radarr and Readarr are plugged to downloaders for our 2 different systems:
 
 - [SABnzbd](https://sabnzbd.org/) handles Usenet (newsgroups) binary downloads.
 - [Deluge](http://deluge-torrent.org/) handles torrent download.
@@ -127,6 +135,12 @@ Plex keeps track of your position in the entire library: what episode of a given
 Plex comes with [clients](https://www.plex.tv/apps/) in a lot of different systems (Web UI, Linux, Windows, OSX, iOS, Android, Android TV, Chromecast, PS4, Smart TV, etc.) that allow you to display and watch all your shows/movies in a nice Netflix-like UI.
 
 The server has transcoding abilities: it automatically transcodes video quality if needed (eg. stream your 1080p movie in 480p if watched from a mobile with low bandwidth).
+
+### Organizing book libraries and syncing with ebook readers through Calibre and Calibre-web
+
+[Calibre](https://calibre-ebook.com/) is a management solution for ebooks. It will manage the ebook database, enable syncing with ebook readers and management of ebook metadata.
+
+Calibre has an outdated interface, an alternative for that is [Calibre-web](https://github.com/janeczku/calibre-web) which is an independent project providing a fresh interface for calibre.
 
 ### Combine all the different GUI's in one with Organizr
 
@@ -671,7 +685,7 @@ Let's add a series !
 
 ![Adding a series](img/sonarr_add.png)
 
-_Note: You may need to `chown -R $USER:$USER /path/to/root/directory` so Sonarr and the rest of the apps have the proper permissions to modify and move around files. This Docker image of Sonarr uses an internal user account inside the container called `abc` some you may have to set this user as owner of the directory where it will place the media files after download. This note also applies for Radarr._
+_*Note*: You may need to `chown -R $USER:$USER /path/to/root/directory` so Sonarr and the rest of the apps have the proper permissions to modify and move around files. This Docker image of Sonarr uses an internal user account inside the container called `abc` some you may have to set this user as owner of the directory where it will place the media files after download. This note also applies for Radarr._
 
 Enter the series name, then you can choose a few things:
 
@@ -741,20 +755,6 @@ When download is over, you can head over to Plex and see that the movie appeared
 
 ![Movie landed in Plex](img/busan_plex.png)
 
-#### Movie discovering
-
-When clicking on `Add Movies` you can select `Discover New Movies`, then browse through a list of TheMovieDB recommended or popular movies.
-
-![Movie landed in Plex](img/radarr_recommendations.png)
-
-On the rightmost tab, you'll also see that you can setup Lists of movies. What if you could have in there a list of the 250 greatest movies of all time and just one-click download the ones you want?
-
-This can be set up in `Settings/Lists`. Here are some interesting lists:
-
-- StevenLu: that's an [interesting project](https://github.com/sjlu/popular-movies) that tries to determine by certain heuristics the current popular movies.
-- IMDB TOP 250 movies of all times from Radarr Lists presets
-- Trakt Lists Trending and Popular movies
-
 ### Setup Bazarr
 
 For subtitles, there's a specific service called [Bazarr](https://www.bazarr.media/) which hooks directly into Radarr and Sonarr and makes the process more effective and painless. If you don't care about subtitles go ahead and skip this step.
@@ -811,15 +811,132 @@ Once that's done Bazarr will require a restart after which Bazarr should automat
 
 Additional information can be found on the [Bazarr wiki page](https://github.com/morpheus65535/bazarr/wiki/First-time-installation-configuration).
 
+### Setup Calibre
+
+#### Calibre Docker container
+
+The usual docker compose entry can be found below :
+
+```yaml
+  calibre:
+    image: linuxserver/calibre:latest
+    container_name: calibre
+    restart: unless-stopped
+    extra_hosts:
+      - "media:${MC_IP}"
+    security_opt:
+      - seccomp:unconfined  # optional
+    environment:
+      - PUID=${PUID}  # default user id, defined in .env
+      - PGID=${PGID}  # default group id, defined in .env
+      - TZ=${TZ}      # time zone, defined in .env
+      - PASSWORD=     # optional
+      - CLI_ARGS=     # optional
+    volumes:
+      - /etc/localtime:/etc/localtime:ro
+      - ${ROOT}/config/calibre:/config                              # config files
+      - ${ROOT}/data/media-library/books:/data/media-library/books  # media library
+    ports:
+      - 8780:8080   # GUI
+      - 8781:8181
+      - 8782:8081   # Sharing over the net
+
+  calibre-web:
+    image: linuxserver/calibre-web:latest
+    container_name: calibre-web
+    restart: unless-stopped
+    extra_hosts:
+      - "media:${MC_IP}"
+    environment:
+      - PUID=${PUID}  # default user id, defined in .env
+      - PGID=${PGID}  # default group id, defined in .env
+      - TZ=${TZ}      # time zone, defined in .env
+      - DOCKER_MODS=linuxserver/mods:universal-calibre  # optional
+      - OAUTHLIB_RELAX_TOKEN_SCOPE=1                    # optional
+    volumes:
+      - /etc/localtime:/etc/localtime:ro
+      - ${ROOT}/config/calibre-web:/config                          # config files
+      - ${ROOT}/data/media-library/books:/data/media-library/books  # media library
+    ports:
+      - 8783:8083
+```
+
+#### Calibre Configuration
+
+A welcome wizard will pop up when connecting to the gui on port 8780 for the first time.
+It will require the location of the library to be set to `/data/media-library/books`.
+
+![Calibre wizard](img/calibre_wizard_library_location.png)
+
+The next screen will ask which eReader to configure as default. A generic device can be selected if a specific device is not available.
+
+After loading the main gui, Settings need to be changed in the `Preferences` , `Sharing over the net` screen.
+
+![Calibre Sharing over the net - main](img/calibre_sharing_main.png)
+
+In the `Main` tab, enable both `Require username and password to access the Content server` and `Run server automatically when calibre starts`.
+
+In the `User accounts` tab , create a user for readarr and make sure `Allow <user> to make changes`.
+
+Apply the changes and restart the server afterwards as requested.
+
+More info on the features of Calibre, including a [demo can be found on the project site](https://calibre-ebook.com/). 
+
+#### Calibre-web Configuration
+
+Calibre-web can be reached on port 8783.
+The default username is `admin` , and the default password is `admin123`. It's always best to change default credentials as soon as possible.
+
+Th first screen after logging in will ask for the location of the Calibre database. In this config it's `/data/media-library/books`
+
+![Calibre-web Database Configuration](img/calibre-web_database.png)
+
+The quick start guide for Calibre will be visible upon a refresh, showing that the connection to the Calibre database is complete.
+That is all the configuration needed to access the book library through the web-interface. 
+
+Calibre and Calibre-web contain a lot more features, however those features and in particular how to connect an e-reader to Calibre or Calibre-web is outside the scope of this guide.
+
+### Setup ebooks Readarr
+
+#### Ebooks Readarr Docker container
+
+```yaml
+  readarr-ebooks:
+    container_name: readarr-ebooks
+    image: hotio/readarr
+    restart: unless-stopped
+    extra_hosts:
+      - "media:${MC_IP}"
+    ports:
+      - 8787:8787   # GUI
+    environment:
+      - PUID=${PUID}  # default user id, defined in .env
+      - PGID=${PGID}  # default group id, defined in .env
+      - TZ=${TZ}      # time zone, defined in .env
+    volumes:
+      - /etc/localtime:/etc/localtime:ro
+      - ${ROOT}/config/readarr-ebooks:/config     # config files
+      - ${ROOT}/data:/data                        # data folder
+```
+
+#### Ebooks Readarr configuration
+
+The readarr configuration is again, very similar to sonarr and radarr.
+
+The exception is that instead of connecting to plex, this service will connect to Calibre.
+This can be setup when adding the root folder.
+Calibre is available from 2 different ports depending on the hostname used to connect to the service.
+If the connection is kept inside the docker network, connecting container-to-container , it's `calibre:8081`.
+If the connection is made to the server host itself, it will be `media:8782`.
+
 ### Setup Organizr
 
 All the above services come with their own GUI and webapp. Organizr can be used to combine all of these into a single page and make management easier.
 It is also more convenient to enable outside access to 1 combined service instead of opening them all up.
 
-*_NOTE_* : 
-Exposing these GUIs directly to the internet is highly discouraged. It greatly increases the networks attack surface.
-If access from outside the local network is required, it's highly encouraged to use a point-to-point VPN solution.
-An implementation of Tailscale is on the ToDo list to allow for secure management of the different GUIs.
+_*NOTE*: Exposing these GUIs directly to the internet is highly discouraged. It greatly increases the networks attack surface._
+_If access from outside the local network is required, it's highly encouraged to use a point-to-point VPN solution._
+_An implementation of Tailscale is on the ToDo list to allow for secure management of the different GUIs._
 
 If direct access from the internet (without VPN, so very much discouraged) is a hard requirement, make sure to implement all the available security methods. 
 Use a strong username and password and enable multi-factor authentication.

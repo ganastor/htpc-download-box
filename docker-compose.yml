@@ -163,6 +163,65 @@ services:
       - ${ROOT}/data/media-library/movies:/movies       # movies folder
       - ${ROOT}/data/media-library/tv:/tv               # tv shows folder
       
+  readarr-ebooks:
+    container_name: readarr-ebooks
+    image: hotio/readarr
+    restart: unless-stopped
+    extra_hosts:
+      - "media:${MC_IP}"
+    ports:
+      - 8787:8787   # GUI
+    environment:
+      - PUID=${PUID}  # default user id, defined in .env
+      - PGID=${PGID}  # default group id, defined in .env
+      - TZ=${TZ}      # time zone, defined in .env
+    volumes:
+      - /etc/localtime:/etc/localtime:ro
+      - ${ROOT}/config/readarr-ebooks:/config     # config files
+      - ${ROOT}/data:/data                        # data folder
+
+  calibre:
+    image: linuxserver/calibre:latest
+    container_name: calibre
+    restart: unless-stopped
+    extra_hosts:
+      - "media:${MC_IP}"
+    security_opt:
+      - seccomp:unconfined  # optional
+    environment:
+      - PUID=${PUID}  # default user id, defined in .env
+      - PGID=${PGID}  # default group id, defined in .env
+      - TZ=${TZ}      # time zone, defined in .env
+      - PASSWORD=     # optional
+      - CLI_ARGS=     # optional
+    volumes:
+      - /etc/localtime:/etc/localtime:ro
+      - ${ROOT}/config/calibre:/config                              # config files
+      - ${ROOT}/data/media-library/books:/data/media-library/books  # media library
+    ports:
+      - 8780:8080   # GUI
+      - 8781:8181
+      - 8782:8081   # Sharing over the net
+
+  calibre-web:
+    image: linuxserver/calibre-web:latest
+    container_name: calibre-web
+    restart: unless-stopped
+    extra_hosts:
+      - "media:${MC_IP}"
+    environment:
+      - PUID=${PUID}  # default user id, defined in .env
+      - PGID=${PGID}  # default group id, defined in .env
+      - TZ=${TZ}      # time zone, defined in .env
+      - DOCKER_MODS=linuxserver/mods:universal-calibre  # optional
+      - OAUTHLIB_RELAX_TOKEN_SCOPE=1                    # optional
+    volumes:
+      - /etc/localtime:/etc/localtime:ro
+      - ${ROOT}/config/calibre-web:/config                          # config files
+      - ${ROOT}/data/media-library/books:/data/media-library/books  # media library
+    ports:
+      - 8783:8083
+      
   organizr:
     container_name: organizr
     hostname: organizr
