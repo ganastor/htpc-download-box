@@ -237,3 +237,22 @@ services:
       - PUID=${PUID}  # default user id, defined in .env
       - PGID=${PGID}  # default group id, defined in .env
       - TZ=${TZ}      # time zone, defined in .env
+
+  tailscale:
+    container_name: tailscale
+    hostname: media
+    image: tailscale/tailscale:latest
+    restart: unless-stopped
+    cap_add:
+      - NET_ADMIN
+      - NET_RAW
+    network_mode: host
+    environment:
+      - TS_STATE_DIR=/config
+      - TS_AUTHKEY=${TS_AUTH_KEY}
+    volumes:
+      - /etc/localtime:/etc/localtime:ro
+      - ${ROOT}/config/tailscale:/config
+      - /dev/net/tun:/dev/net/tun
+      - /var/lib:/var/lib
+    

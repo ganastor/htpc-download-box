@@ -17,6 +17,7 @@ All automated.
     - [Organize libraries and play videos with Plex](#organize-libraries-and-play-videos-with-plex)
     - [Organizing book libraries and syncing with ebook readers through Calibre and Calibre-web](#organizing-book-libraries-and-syncing-with-ebook-readers-through-calibre-and-calibre-web)
     - [Combine all the different GUI's in one with Organizr](#combine-all-the-different-guis-in-one-with-organizr)
+    - [Allow access to the software stack from outside the network with Tailscale.](#allow-access-to-the-software-stack-from-outside-the-network-with-tailscale)
   - [Hardware configuration](#hardware-configuration)
   - [Software stack](#software-stack)
   - [Installation guide](#installation-guide)
@@ -70,7 +71,7 @@ All automated.
 ## ToDo
 
 - Audiobookshelf integration as audiobook media player
-- Tailscale vpn for management of services outside the private network.
+- Tailscale vpn for management of services outside the private network. --- Documentation
 
 ## Overview
 
@@ -150,6 +151,13 @@ This guide will only show how the different service GUIs can be combined as diff
 Organizr can do a lot more, but that will be out of scope for this guide. More info is available on the project's [wiki](https://docs.organizr.app/).
 
 ![Organizer with added tabs](img/organizr_tab_editor_full.png)
+
+### Allow access to the software stack from outside the network with Tailscale.
+
+[Tailscale](https://tailscale.com/) is a managing tool for wireguard vpn solutions.
+It will enable access to the services running inside a closed off network to specific devices outside this network.
+
+In this case, Tailscale will be configured for point-to-point access from (for example an android phone).
 
 ## Hardware configuration
 
