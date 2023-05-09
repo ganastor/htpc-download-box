@@ -256,3 +256,30 @@ services:
       - /dev/net/tun:/dev/net/tun
       - /var/lib:/var/lib
     
+  tdarr:
+    container_name: tdarr
+    image: ghcr.io/haveagitgat/tdarr:latest
+    restart: unless-stopped
+    network_mode: bridge
+    ports:
+      - 8265:8265 # webUI port
+      - 8266:8266 # server port
+      - 8267:8267 # Internal node port
+      - 8268:8268 # Example extra node port
+    environment:
+      - TZ=${TZ}
+      - PUID=${PUID}
+      - PGID=${PGID}
+      - UMASK_SET=002
+      - serverIP=0.0.0.0
+      - serverPort=8266
+      - webUIPort=8265
+      - internalNode=true
+      - inContainer=true
+      - nodeName=MyInternalNode
+    volumes:
+      - /${ROOT}/data/tdarr/server:/app/server
+      - /${ROOT}/config/tdarr:/app/configs
+      - /${ROOT}/data/tdarr/logs:/app/logs
+      - /${ROOT}/data/tdarr/media:/media
+      - /${ROOT}/data/tdarr/transcode_cache:/temp
