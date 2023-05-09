@@ -1,6 +1,6 @@
 # HTPC Download Box
 
-Sonarr / Radarr / Prowlarr / SABnzbd / Deluge / Gluetun / Plex
+Sonarr / Radarr / Bazarr / Readarr / Calibre(-Web) / Organizr / Prowlarr / SABnzbd / Deluge / Gluetun / Plex / Tailscale
 
 TV shows and movies download, sort, with the desired quality and subtitles, behind a VPN (optional), ready to watch, in a beautiful media player.
 All automated.
